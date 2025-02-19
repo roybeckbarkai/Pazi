@@ -465,13 +465,13 @@ def G_fit(q1, I1, q2, I2,
     # Optionally plot the fitting curve
     if plot_fitting_curve:
         plt.figure(figsize=(8, 6))
-        plt.plot(q1_masked, logdI, 'bo', label='Data')
-        plt.plot(q1_masked, G_function(q1_masked, *popt), 'r-', label='Best fit')
+        plt.plot(q1_masked**2, logdI, 'bo', label='Data')
+        plt.plot(q1_masked**2, G_function(q1_masked, *popt), 'r-', label='Best fit')
         # Compute and plot the curve using the initial parameters
        # G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
        # plt.plot(q1_masked, G_initial, 'k--', label='Initial parameters')
-        plt.xlabel('q')
-        plt.ylabel('ln(I1/I2) (normalized)')
+        plt.xlabel('q^2')
+        plt.ylabel('ln(I1/I2)  (normalized)')
         plt.title('G_function Fitting')
         plt.legend()
         plt.show()

@@ -138,7 +138,7 @@ simulation_parameters_2 = {
 fitting_parameters = {
 # q range limits
     "q_min": None,
-    "q_max": 3*1/2,
+    "q_max": 1*1/2,
 
 # f2 input
     "form_factor_name": "guinier_ff",
