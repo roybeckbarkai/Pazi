@@ -110,7 +110,7 @@ simulation_parameters_1 = {
 # Flattening parameters
     "normalization_on": True,
     "return_unique": False,
-    "q_min": None,
+    "q_min": 0.0001,
     "q_max": 0.1
 }
 
@@ -131,7 +131,7 @@ simulation_parameters_2 = {
 # Flattening parameters
     "normalization_on": True,
     "return_unique": False,
-    "q_min": None,
+    "q_min": 0.00001,
     "q_max": 0.1
 }
 
@@ -153,8 +153,9 @@ fitting_parameters = {
 
 # Rg input
     "rg_initial": 1,
-    "rg_min": 1,
-    "rg_free": 1e2,
+    "rg_min": 0.3,
+    "rg_max": 10,
+    "rg_free": True,
     "perform_guinier_estimation": False,
 
     # Variance input
@@ -173,7 +174,7 @@ fitting_parameters = {
     "fitting_method": 'leastsq',
     "save_to_log": False,
     "log_file_name": 'auto_log_file',
-    "plot_fitting_curve": False
+    "plot_fitting_curve": True
 }
 ### * END OF INPUT PARAMETERS *
 

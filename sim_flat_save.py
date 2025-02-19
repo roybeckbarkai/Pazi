@@ -102,7 +102,7 @@ simulation_parameters_1 = {
     "px_size": 0.075,  # mm
     "wavelength": 0.154,  # nm
 # "Sample" parameters
-    "form_factor_name": "sphere_ff",
+    "form_factor_name": "guinier_ff",
     "rg": 2,  # in nm
     "variance": 0.01,
     "sigma_x": 0.01,  # in pixels
@@ -123,11 +123,11 @@ simulation_parameters_2 = {
     "px_size": 0.075,  # mm
     "wavelength": 0.154,  # nm
 # "Sample" parameters
-    "form_factor_name": "sphere_ff",
+    "form_factor_name": "guinier_ff",
     "rg": 2,  # in nm
     "variance": 0.01,
-    "sigma_x": 0.3,  # in pixels
-    "sigma_y": 0.3,  # in pixels
+    "sigma_x": 2,  # in pixels
+    "sigma_y": 2,  # in pixels
     "sample_detector_distance": 1500,  # in mm
 # Flattening parameters
     "normalization_on": True,
@@ -158,8 +158,8 @@ q2_binned = binned_data["q"].values
 I1_binned = binned_data["I1"].values
 I2_binned = binned_data["I2"].values
 
-csv_man.save_q_I_to_csv (q1_binned,I1_binned,filename="I_q1_sph.csv")
-csv_man.save_q_I_to_csv (q2_binned,I2_binned,filename="I_q2_sph.csv")
+csv_man.save_q_I_to_csv (q1_binned,I1_binned,filename="I_q1_guinier_ff.csv")
+csv_man.save_q_I_to_csv (q2_binned,I2_binned,filename="I_q2_guinier_ff.csv")
 
 q_units = 'nm'
 plt.figure(1)

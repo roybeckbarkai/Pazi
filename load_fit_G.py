@@ -141,14 +141,14 @@ fitting_parameters = {
     "q_max": 3*1/2,
 
 # f2 input
-    "form_factor_name": "sphere_ff",
+    "form_factor_name": "guinier_ff",
     "f2_initial": 0,
     "f2_min": -1,
     "f2_max": 1,
-    "f2_free": True,
+    "f2_free": False,
 
 # Rg input
-    "rg_initial": 1,
+    "rg_initial": 2,
     "rg_min": 0.5,
     "rg_max": 2.5,
     "rg_free": True,
@@ -161,7 +161,7 @@ fitting_parameters = {
     "var_free": True,
 
 # A (scaling factor) input
-    "A_initial": -3/(2*4*(1+0.01)),
+    "A_initial": -4.483e-5* 3/(2*4*(1+0.01)),
     "A_min": -1,
     "A_max": 0,
     "A_free": True,
@@ -170,13 +170,16 @@ fitting_parameters = {
  #   "fitting_method": 'differential_evolution', 
  #   "save_to_log": False,
  #   "log_file_name": 'auto_log_file',
-    "plot_fitting_curve": True
+    "plot_fitting_curve": True,
+    "auto_set_parameters": False,
+    "auto_rg_bound_percent": 0.2
+
 }
 ### * END OF INPUT PARAMETERS *
 
 
-q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I_q1")
-q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I_q2")
+q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I_q1_guinier_ff.csv")
+q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I_q2_guinier_ff.csv")
 
 
 # Fits ln(I1/I2) with G function

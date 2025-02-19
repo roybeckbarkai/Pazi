@@ -8,7 +8,8 @@ from datetime import datetime
 def save_1d_to_csv(output_folder, output_file_name, q, intensity):
     df = pd.DataFrame({'q': q, 'Intensity': intensity})
     df.to_csv(output_folder + output_file_name + ".dat", sep=",", index=False)
-    print(f"2D intensity data flattened to {output_folder + output_file_name + ".dat"}")
+    out_name=output_folder + output_file_name + ".dat"
+    print(f"2D intensity data flattened to {out_name}")
 
 # Saves 2D Intensities array to .csv file with coma separation
 def save_2d_to_csv(output_folder, output_file_name, intensity_array_2d):
