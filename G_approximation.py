@@ -3,8 +3,8 @@ import numpy as np
 from typing import Optional
 import random
 import guinier_approximation
-import matplotlib.pyplot as plt
-import save_read_convert
+
+import save_and_load as csv_man
 
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -12,15 +12,72 @@ import matplotlib.pyplot as plt
 
 # Defines G(q) fitting function
 #List of f2 values based on the form factor
-f2_dictionary={'guinier_ff': 0, 'sphere_ff': 1/126, 'gaussian_ff': -1/36}
 
+
+def G_function(x, Rg, C2, V, A):
+    """
+    Compute G(q) = ln(I1(q)/I2(q)) = A*(g0 + g1*q^2 + g2*q^4 + g3*q^6)
+    where the coefficients are defined as follows:
+    
+      g0 = -2/3*(Rg^2 + V)
+      B  = C2*Rg^4 + (6*C2 - 2/9)*Rg^2*V
+      g1 = 2/9*(Rg^2 + V)**2 - 8*B
+      g2 = 8/3 * B*(Rg^2 + V)
+      g3 = 8 * B**2
+    
+    Parameters
+    ----------
+    x=q : float or numpy.ndarray
+        The radial scattering variable.
+    A : float
+        The prefactor, representing (sigma_x1^2+sigma_y1^2) - (sigma_x2^2+sigma_y2^2).
+    Rg : float
+        The mean radius of gyration (R_0).
+    V : float
+        The variance of the radius of gyration distribution.
+    C2 : float
+        The constant c2 in the unsmeared intensity.
+        
+    Returns
+    -------
+    G : float or numpy.ndarray
+        The computed value of ln(I1(q)/I2(q)).
+    """
+    q = np.array(x, dtype=float)
+    if np.any(q < 0):
+        raise ValueError("All q values must be nonnegative.")
+    A = float(A)
+    Rg = float(Rg)
+    V = float(V)
+    C2 = float(C2)
+       
+    if Rg <= 0:
+        raise ValueError("Rg (mean radius of gyration) must be positive.")
+    if V < 0:
+        raise ValueError("Variance V must be nonnegative.")
+    
+    # Coefficient g0:
+    g0 = - (2.0 / 3.0) * (Rg**2 + V)
+    
+    # Define B:
+    B = C2 * (Rg**4) + (6.0 * C2 - 2.0/9.0) * (Rg**2) * V
+    
+    # Coefficients g1, g2, g3:
+    g1 = (2.0 / 9.0) * (Rg**2 + V)**2 - 8.0 * B
+    g2 = (8.0 / 3.0) * B * (Rg**2 + V)
+    g3 = 8.0 * (B**2)
+    
+    # Evaluate and return G(q)
+    return A * (g0 + g1 * q**2 + g2 * q**4 + g3 * q**6)
+    
+   
 # G(q) fitting function
 # x is an argument (q)
 # rg_fit -- Rg
 # f2_fit -- f2 parameter
 # var_fit -- variance
 # A_fit -- scaling factor
-def G_function(x, rg_fit, f2_fit, var_fit, A_fit):
+def G_function_1D(x, rg_fit, f2_fit, var_fit, A_fit):
     """
     Compute the G(q) function for fitting log intensity ratios.
 
@@ -62,7 +119,8 @@ def G_function(x, rg_fit, f2_fit, var_fit, A_fit):
     g3 = (24 * f2_fit**2 + (960 * f2_fit**2 - (128/3) * f2_fit) * var_fit) * x6 * rg6
 
     # Combine terms and apply the overall scaling factor
-    return (2/3) * rg2 * A_fit * (g0 + g1 + g2 + g3)
+   # return (2/3) * rg2 * A_fit * (g0 + g1 + g2 + g3)
+    return A_fit * (g0 + g1 + g2 + g3)
 
 '''
 Fits the 1D data with G function
@@ -110,121 +168,8 @@ Optional parameters:
 -- log_file_name -- Default: 'auto_log_file'
 '''
 
-# def G_fit(q1, I1, q2, I2,
-#           form_factor_name: Optional[str] = 'NaN',
-#           f2_initial: Optional[float] = 0, f2_min: Optional[float] = -1, f2_max: Optional[float] = 1, f2_free: Optional[bool]=True,
-#           q_min: Optional[float] = None, q_max: Optional[float] = None,
-#           rg_initial: Optional[float] = 0, rg_min: Optional[float]=0, rg_max: Optional[float]=1e5, rg_free: Optional[bool]=True,
-#           var_initial: Optional[float] = 0, var_min: Optional[float]=0, var_max: Optional[float]=1, var_free: Optional[bool]=True,
-#           A_initial: Optional[float] = 0, A_min: Optional[float] = -1e38, A_max: Optional[float] = 1e38, A_free: Optional[bool]=True,
-#           fitting_method: Optional[str] = 'leastsq',
-#           perform_guinier_estimation: Optional[bool] = False,
-#           save_to_log: Optional[bool] = False,
-#           log_file_name: Optional[str] = 'auto_log_file',
-#           plot_fitting_curve: Optional[bool] = False
-#           ):
-
-#     # Check if the q ranges of the input data sets are the same
-#     if not np.array_equal(q1, q2): print('q ranges of the data sets do not match. Bin the data.')
-
-#     # Masks the data based on selected q region
-#     if q_min is None:
-#         q_min = max(np.min(q1), np.min(q2))
-#     if q_max is None:
-#         q_max = min(np.max(q1), np.max(q2))
-    
-#     maskq1 = (q1 >= q_min) & (q1 <= q_max)
-#     maskq2 = (q2 >= q_min) & (q2 <= q_max)
-#     # elif (q_min is not None):
-#     #     maskq1 = (q1 >= q_min)
-#     #     maskq2 = (q2 >= q_min)
-#     # elif (q_max is not None):
-#     #     maskq1 = (q1 <= q_max)
-#     #     maskq2 = (q2 <= q_max)
-#     # else:
-#     #     maskq1 = True
-#     #     maskq2 = True
-
-#     q1 = np.array(q1).flatten()
-#     q2 = np.array(q2).flatten()
-#     I1 = np.array(I1).flatten()
-#     I2 = np.array(I2).flatten()
-
-
-#     q1_masked = q1[maskq1]
-#     q2_masked = q2[maskq2]
-#     I1_masked = I1[maskq1]
-#     I2_masked = I2[maskq2]
-
-#     # Calculates logI = log(I1/I2)
-#     logdI = np.log(I1_masked / I2_masked)
-#     logdI = logdI / logdI[0]
-#     if form_factor_name == 'NaN':
-#         f2_free = True
-#         f2_initial = random.uniform(-1, 1)
-#         print('No form factor is given, f2 is fitted as a free parameter')
-#     elif form_factor_name in f2_dictionary:
-#         f2_free = False
-#         f2_initial = f2_dictionary[form_factor_name]
-#     else:
-#         f2_free = True
-#         #f2_initial = random.uniform(-1, 1)
-#         print('Wrong form factor name, f2 is fitted as a free parameter')
-
-#     q_min = np.min(q1_masked)
-#     q_max = np.max(q1_masked)
-
-#     if var_initial == 0:
-#         var_initial = random.uniform(0, 1)
-
-#     # if A_initial == 0:
-#     #     A_initial += 1
-
-#     if perform_guinier_estimation:
-#         # Estimates Rgs from the 1st 1D data set
-#         rg1 = guinier_approximation.estimate_Rg(q1_masked, I1_masked, q_min, q_max)
-#         rg2 = guinier_approximation.estimate_Rg(q2_masked, I2_masked, q_min, q_max)
-#         rg_initial = np.mean([rg1, rg2])
-
-#     #Fitting logdI = log(I1/I2) with G function
-#     #model=lmfit.Model(func=G_function, method=fitting_method)
-#     model=lmfit.Model(func=G_function, method='differential_evolution')
-    
-#     parameters = lmfit.Parameters()
-#     parameters.add("rg_fit", value=rg_initial, vary=rg_free, min=rg_min, max=rg_max)
-#     parameters.add("f2_fit", value=f2_initial, vary=f2_free, min=f2_min, max=f2_max)
-#     parameters.add("var_fit", value=var_initial, vary=var_free, min=var_min, max=var_max)
-#     parameters.add("A_fit", value=A_initial, vary=A_free, min=A_min, max=A_max)
-
-#     results=model.fit(logdI, params=parameters, x=q1_masked)
-
-#     G_fit_results = results.fit_report()
-
-#     # Save results to log if required
-#     if save_to_log:
-#         save_read_convert.save_fit_results_to_log(log_file_name, G_fit_results)
-
-#     if plot_fitting_curve:
-#         plt.figure(1)
-#         plt.xscale('linear')
-#         plt.yscale('linear')
-#         plt.plot(q1_masked, logdI, label='Data')
-#         plt.plot(q1_masked, results.best_fit, label='Best fit')
-#         # Compute the G_function with the initial parameters
-#         G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
-#         plt.plot(q1_masked, G_initial, 'k--', label='Initial parameters')
-#         plt.title('Fitting curve')
-#         plt.xlabel('q')
-#         plt.ylabel('ln(I1/I2)')
-#         plt.legend()
-#         plt.show()
-
-#     return G_fit_results
-
-
 
 # Dictionary for f2 values based on form factor name
-f2_dictionary = {'guinier_ff': 0, 'sphere_ff': 1/126, 'gaussian_ff': -1/36}
 def adjust_bounds(lower_bounds, upper_bounds, epsilon=1e-8):
     """
     Adjusts the lower and upper bounds to ensure that each lower bound is strictly less than its upper bound.
@@ -345,31 +290,32 @@ def G_fit(q1, I1, q2, I2,
     # Warn if q ranges differ
     if not np.array_equal(q1, q2):
         print('q ranges of the data sets do not match. Consider binning the data.')
-
+        return -1
     # Determine common q-range if not provided
     if q_min is None:
-        q_min = max(np.min(q1), np.min(q2))
+        q_min =  np.min(q2)
     if q_max is None:
-        q_max = min(np.max(q1), np.max(q2))
+        q_max = np.max(q2)
 
     # Create masks for q-range selection
     maskq1 = (q1 >= q_min) & (q1 <= q_max)
-    maskq2 = (q2 >= q_min) & (q2 <= q_max)
+    # maskq2 = (q2 >= q_min) & (q2 <= q_max)
 
     # Ensure data are 1D arrays
     q1 = np.array(q1).flatten()
-    q2 = np.array(q2).flatten()
+    # q2 = np.array(q2).flatten()
     I1 = np.array(I1).flatten()
     I2 = np.array(I2).flatten()
 
     q1_masked = q1[maskq1]
-    q2_masked = q2[maskq2]
+    # q2_masked = q2[maskq1]
     I1_masked = I1[maskq1]
-    I2_masked = I2[maskq2]
+    I2_masked = I2[maskq1]
 
     # Compute normalized log intensity ratio
     logdI = np.log(I1_masked / I2_masked)
-    #logdI = logdI / logdI[0]
+    f2_dictionary = {'guinier_ff': 0, 'sphere_ff': 1/126, 'gaussian_ff': -1/36}
+
 
     # Determine f2 parameter
     if form_factor_name == 'NaN':
@@ -390,19 +336,16 @@ def G_fit(q1, I1, q2, I2,
     
     # Ensure scaling factor is nonzero
     if A_initial == 0:
-        A_initial = 1e-8
+        A_initial = epsilon
 
      
 
     # Perform Guinier estimation if requested
     if (perform_guinier_estimation | auto_set_parameters):
         rg1 = guinier_approximation.estimate_Rg(q1_masked, I1_masked, q_min, q_max)
-        rg2 = guinier_approximation.estimate_Rg(q2_masked, I2_masked, q_min, q_max)
+        rg2 = guinier_approximation.estimate_Rg(q1_masked, I2_masked, q_min, q_max)
         rg_initial = np.mean([rg1, rg2])
-
-  
-    
-   
+        print ("auto Rg = ",rg_initial)
 
 
     # For fixed parameters, set lower and upper bounds equal to the initial guess.
@@ -418,16 +361,20 @@ def G_fit(q1, I1, q2, I2,
     if not A_free:
         A_min = A_initial
         A_max = A_initial
-    logdI_zero = logdI[0]
-    print ("ln(I1(0)/I2(0))=",logdI_zero)
+
     if auto_set_parameters:
-       
+        
         rg_min = np.max([epsilon,rg_initial*(1-auto_rg_bound_percent)])
         rg_max = rg_initial*(1+auto_rg_bound_percent)
+        
+        logdI_zero = logdI[0]
         A_initial = logdI_zero / G_function(0, rg_initial, f2_initial, var_initial, 1)
-        A_max =  np.max([epsilon,logdI_zero / G_function(0, rg_max, f2_initial, var_max, 1)])
-        A_min =  logdI_zero / G_function(0, rg_min, f2_initial, var_min, 1)
-        print ("ln(I1(0)/I2(0))=",logdI_zero)
+        A_max = np.max ([A_initial * (1-auto_rg_bound_percent),A_initial * (1+auto_rg_bound_percent)])
+        A_min = np.min ([A_initial * (1-auto_rg_bound_percent),A_initial * (1+auto_rg_bound_percent)])
+        
+        # A_max =  np.max([epsilon,logdI_zero / G_function(0, rg_max, f2_initial, var_max, 1)])
+        # A_min =  logdI_zero / G_function(0, rg_min, f2_initial, var_min, 1)
+        # print ("ln(I1(0)/I2(0))=",logdI_zero)
         
     lower_bounds = [rg_min, f2_min, var_min, A_min]
     upper_bounds = [rg_max, f2_max, var_max, A_max]
@@ -436,7 +383,15 @@ def G_fit(q1, I1, q2, I2,
     lower_bounds, upper_bounds = adjust_bounds(lower_bounds, upper_bounds, epsilon)
     
     # Build initial guess vector and bounds
-    p0 = [rg_initial, f2_initial, var_initial, A_initial]
+    p0 = [rg_initial,f2_initial, var_initial, A_initial]
+    
+    
+    test1 = G_function (x=q1_masked, Rg=rg_initial, C2=f2_initial, V=var_initial, A=A_initial)
+    test2 = G_function (x=q1_masked, Rg=lower_bounds[0], C2=lower_bounds[1],V=lower_bounds[2],A=lower_bounds[3])
+    test3 = G_function (x=q1_masked, Rg=upper_bounds[0], C2=upper_bounds[1],V=upper_bounds[2],A=upper_bounds[3])
+    print("Initial guess p0 =", p0)
+    print("Lower bounds =", lower_bounds)
+    print("Upper bounds =", upper_bounds)
     
     # Perform curve fitting using SciPy's curve_fit
     try:
@@ -468,8 +423,8 @@ def G_fit(q1, I1, q2, I2,
         plt.plot(q1_masked**2, logdI, 'bo', label='Data')
         plt.plot(q1_masked**2, G_function(q1_masked, *popt), 'r-', label='Best fit')
         # Compute and plot the curve using the initial parameters
-       # G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
-       # plt.plot(q1_masked, G_initial, 'k--', label='Initial parameters')
+        G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
+        plt.plot(q1_masked**2, G_initial, 'k--', label='Initial parameters')
         plt.xlabel('q^2')
         plt.ylabel('ln(I1/I2)  (normalized)')
         plt.title('G_function Fitting')
