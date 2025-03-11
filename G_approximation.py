@@ -332,13 +332,11 @@ def G_fit(q1, I1, q2, I2,
     # Update q range from masked data
     q_min = np.min(q1_masked)
     q_max = np.max(q1_masked)
-  
-    
+      
     # Ensure scaling factor is nonzero
     if A_initial == 0:
         A_initial = epsilon
 
-     
 
     # Perform Guinier estimation if requested
     if (perform_guinier_estimation | auto_set_parameters):
@@ -384,14 +382,6 @@ def G_fit(q1, I1, q2, I2,
     
     # Build initial guess vector and bounds
     p0 = [rg_initial,f2_initial, var_initial, A_initial]
-    
-    
-    test1 = G_function (x=q1_masked, Rg=rg_initial, C2=f2_initial, V=var_initial, A=A_initial)
-    test2 = G_function (x=q1_masked, Rg=lower_bounds[0], C2=lower_bounds[1],V=lower_bounds[2],A=lower_bounds[3])
-    test3 = G_function (x=q1_masked, Rg=upper_bounds[0], C2=upper_bounds[1],V=upper_bounds[2],A=upper_bounds[3])
-    print("Initial guess p0 =", p0)
-    print("Lower bounds =", lower_bounds)
-    print("Upper bounds =", upper_bounds)
     
     # Perform curve fitting using SciPy's curve_fit
     try:
