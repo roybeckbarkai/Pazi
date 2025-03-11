@@ -4,211 +4,225 @@ import G_approximation
 import matplotlib.pyplot as plt
 import numpy as np
 import save_and_load as csv_man
+# Example usage:
+if __name__ == "__main__":
+    # *** Simulation parameters ***
+    '''
+    * Detector and source parameters
 
-# *** Simulation parameters ***
-'''
-* Detector and source parameters
+        -- px_number -- number of detector pixels [X, Y],
+        -- px_size --  linear pixel size in mm
+        -- wavelength -- source wavelength in  # nm
 
-    -- px_number -- number of detector pixels [X, Y],
-    -- px_size --  linear pixel size in mm
-    -- wavelength -- source wavelength in  # nm
+    * "Sample" parameters
 
-* "Sample" parameters
+        -- form_factor_name -- name of the form factor from form_factor_methods:
+            - guinier_ff #GUINIER FORM FACTOR
+            - sphere_ff #SPHERICAL FORM FACTOR
+            - gaussian_ff #GAUSSIAN CHAIN FORM FACTOR
 
-    -- form_factor_name -- name of the form factor from form_factor_methods:
-        - guinier_ff #GUINIER FORM FACTOR
-        - sphere_ff #SPHERICAL FORM FACTOR
-        - gaussian_ff #GAUSSIAN CHAIN FORM FACTOR
+        -- rg -- Rg in THE SAME UNITS AS WAVELENGTH
+        -- variance
+        -- sigma_x -- in pixels
+        -- sigma_y -- in pixels
+        -- sample_detector_distance -- in mm
 
-    -- rg -- Rg in THE SAME UNITS AS WAVELENGTH
-    -- variance
-    -- sigma_x -- in pixels
-    -- sigma_y -- in pixels
-    -- sample_detector_distance -- in mm
+    Flattening parameters
+        -- normalization_on: bool
+            A flag that allows to choose if the flattening should be done with normalization
+                True: with normalization
+                False: without normalization
+        -- return_unique : bool, optional
+            If True, return unique radial values with averaged intensities (default is True).
+        -- q_min : float, optional
+            Minimum q value for filtering (only applied if q_max is also provided).
+        -- q_max : float, optional
+            Maximum q value for filtering
+    '''
 
-Flattening parameters
-    -- normalization_on: bool
-        A flag that allows to choose if the flattening should be done with normalization
-            True: with normalization
-            False: without normalization
-    -- return_unique : bool, optional
-        If True, return unique radial values with averaged intensities (default is True).
-    -- q_min : float, optional
-        Minimum q value for filtering (only applied if q_max is also provided).
-    -- q_max : float, optional
-        Maximum q value for filtering
-'''
+    # *** Binning parameters ***
+    '''
+        -- bins_number ---
+    '''
 
-# *** Binning parameters ***
-'''
-    -- bins_number ---
-'''
+    # *** Fitting parameters ***
+    '''
+    Parameters for fitting the ln(I1/I2) vs q data with G function
 
-# *** Fitting parameters ***
-'''
-Parameters for fitting the ln(I1/I2) vs q data with G function
+    Input parameters:
 
-Input parameters:
+    Arbitrary parameters:
+        - q1, I1, q2, I2 -- two sets of Intensities vs q
 
-Arbitrary parameters:
-    - q1, I1, q2, I2 -- two sets of Intensities vs q
+    Optional parameters:
+        * form_factor_name
+            If form_factor_name is given the algorithm will use known f2
+            If form_factor_name is NOT given the algorithm will fit f2 as free parameter
+        * f2
+        -- f2_initial can be either defined by form_factor_name, or manually, or not defined 
+        -- form_factor_name -- used to define f2 parameter value:  
+                guinier_ff: Guinier form factorm, f2 == 0
+                sphere_ff: for spherical particles, f2 == 1/126
+                gaussian_ff: for gaussian chain, f2 == -1/36
+        -- f2_free -- Default: True, if True, treated as a free parameter. If False -- fixed.
+        -- f2_min, f2_max -- Default in fange [-1,1] 
+        
 
-Optional parameters:
-    * form_factor_name
-        If form_factor_name is given the algorithm will use known f2
-        If form_factor_name is NOT given the algorithm will fit f2 as free parameter
-    * f2
-    -- f2_initial can be either defined by form_factor_name, or manually, or not defined 
-    -- form_factor_name -- used to define f2 parameter value:  
-            guinier_ff: Guinier form factorm, f2 == 0
-            sphere_ff: for spherical particles, f2 == 1/126
-            gaussian_ff: for gaussian chain, f2 == -1/36
-    -- f2_free -- Default: True, if True, treated as a free parameter. If False -- fixed.
-    -- f2_min, f2_max -- Default in fange [-1,1] 
-    
+        * Rg
+        -- rg_initial -- Default: 
+        -- rg_free -- Default: True
+        -- rg_min, rg_max -- Default: 
+        -- perform_guinier_estimation -- Default: False
+                if True, tries to use Guinier approximation to find initial Rg
+        
+        * Variance 
+        -- var_initial: Default randomized in (0,1) range
+        -- var_free: Default True
+        -- var_min, var_max: Default in range [0,1]
+        
+        * A (scale factor of G function)
+        -- A_initial -- avoid 0 values. If 0, will be changed to 1
+        -- A_free -- Default: True
+        -- A_min, A_max
+        
+        -- q_min, q_max -- Default: in full q range of the input data
+        
+        -- fitting_method -- selection of fitting methods from .lmfit library https://lmfit.github.io/lmfit-py/fitting.html. Default: 'leastsq' 
+        
+        -- save_to_log -- optional saving  of the fit results to log file, Default: False
+        -- log_file_name -- Default: 'auto_log_file'
+    '''
 
-    * Rg
-    -- rg_initial -- Default: 
-    -- rg_free -- Default: True
-    -- rg_min, rg_max -- Default: 
-    -- perform_guinier_estimation -- Default: False
-            if True, tries to use Guinier approximation to find initial Rg
-    
-    * Variance 
-    -- var_initial: Default randomized in (0,1) range
-    -- var_free: Default True
-    -- var_min, var_max: Default in range [0,1]
-    
-    * A (scale factor of G function)
-    -- A_initial -- avoid 0 values. If 0, will be changed to 1
-    -- A_free -- Default: True
-    -- A_min, A_max
-    
-    -- q_min, q_max -- Default: in full q range of the input data
-    
-    -- fitting_method -- selection of fitting methods from .lmfit library https://lmfit.github.io/lmfit-py/fitting.html. Default: 'leastsq' 
-    
-    -- save_to_log -- optional saving  of the fit results to log file, Default: False
-    -- log_file_name -- Default: 'auto_log_file'
-'''
+    ### *** ENTER ALL SIMULATION AND FITTING PARAMETERS ***
+    simulation_parameters_1 = {
+    # Simulation parameters
+    # Detector and source parameters
+        "px_number": [500, 500],
+        "px_size": 0.075,  # mm
+        "wavelength": 0.154,  # nm
+    # "Sample" parameters
+        "form_factor_name": "guinier_ff",
+        "rg": 2,  # in nm
+        "variance": 0.01,
+        "sigma_x": 0.01,  # in pixels
+        "sigma_y": 0.01,  # in pixels
+        "sample_detector_distance": 1500,  # in mm
+    # Flattening parameters
+        "normalization_on": True,
+        "return_unique": False,
+        "q_min": 0.0001,
+        "q_max": 0.5
+    }
 
-### *** ENTER ALL SIMULATION AND FITTING PARAMETERS ***
-simulation_parameters_1 = {
-# Simulation parameters
-# Detector and source parameters
-    "px_number": [500, 500],
-    "px_size": 0.075,  # mm
-    "wavelength": 0.154,  # nm
-# "Sample" parameters
-    "form_factor_name": "guinier_ff",
-    "rg": 2,  # in nm
-    "variance": 0.01,
-    "sigma_x": 0.01,  # in pixels
-    "sigma_y": 0.01,  # in pixels
-    "sample_detector_distance": 1500,  # in mm
-# Flattening parameters
-    "normalization_on": True,
-    "return_unique": False,
-    "q_min": 0.0001,
-    "q_max": 0.5
-}
+    ## ** Enter parameters for the 2nd I(q) data set **
+    simulation_parameters_2 = {
+    # Simulation parameters
+    # Detector and source parameters
+        "px_number": [500, 500],
+        "px_size": 0.075,  # mm
+        "wavelength": 0.154,  # nm
+    # "Sample" parameters
+        "form_factor_name": "guinier_ff",
+        "rg": 2,  # in nm
+        "variance": 0.01,
+        "sigma_x": 0.3,  # in pixels
+        "sigma_y": 0.3,  # in pixels
+        "sample_detector_distance": 1500,  # in mm
+    # Flattening parameters
+        "normalization_on": True,
+        "return_unique": False,
+        "q_min": 0.00001,
+        "q_max": 0.5
+    }
 
-## ** Enter parameters for the 2nd I(q) data set **
-simulation_parameters_2 = {
-# Simulation parameters
-# Detector and source parameters
-    "px_number": [500, 500],
-    "px_size": 0.075,  # mm
-    "wavelength": 0.154,  # nm
-# "Sample" parameters
-    "form_factor_name": "guinier_ff",
-    "rg": 2,  # in nm
-    "variance": 0.01,
-    "sigma_x": 0.3,  # in pixels
-    "sigma_y": 0.3,  # in pixels
-    "sample_detector_distance": 1500,  # in mm
-# Flattening parameters
-    "normalization_on": True,
-    "return_unique": False,
-    "q_min": 0.00001,
-    "q_max": 0.5
-}
+    # Fitting parameters
+    fitting_parameters = {
+    # q range limits
+        "q_min": None,
+        "q_max": 0.2,
 
-# Fitting parameters
-fitting_parameters = {
-# q range limits
-    "q_min": None,
-    "q_max": 1*1/2,
+    # f2 input
+        "form_factor_name": "guinier_ff",
+        "f2_initial": 0,
+        "f2_min": -1,
+        "f2_max": 1,
+        "f2_free": False,
 
-# f2 input
-    "form_factor_name": "guinier_ff",
-    "f2_initial": 0,
-    "f2_min": -1,
-    "f2_max": 1,
-    "f2_free": False,
+    # Rg input
+        "rg_initial": 2,
+        "rg_min": 0.5,
+        "rg_max": 2.5,
+        "rg_free": True,
+        "perform_guinier_estimation": False,
 
-# Rg input
-    "rg_initial": 2,
-    "rg_min": 0.5,
-    "rg_max": 2.5,
-    "rg_free": True,
-    "perform_guinier_estimation": False,
+        # Variance input
+        "var_initial": 0.001/4,
+        "var_min": 0.000005,
+        "var_max": 0.5,
+        "var_free": True,
 
-    # Variance input
-    "var_initial": 0.3,
-    "var_min": 0.0005,
-    "var_max": 0.5,
-    "var_free": True,
+    # A (scaling factor) input
+        "A_initial": -4.483e-5* 3/(2*4*(1+0.01)),
+        "A_min": -1,
+        "A_max": 0,
+        "A_free": True,
 
-# A (scaling factor) input
-    "A_initial": -4.483e-5* 3/(2*4*(1+0.01)),
-    "A_min": -1,
-    "A_max": 0,
-    "A_free": True,
+    # fitting method and log file choice  #'leastsq',
+    #   "fitting_method": 'differential_evolution', 
+    #   "save_to_log": False,
+    #   "log_file_name": 'auto_log_file',
+        "plot_fitting_curve": True,
+        "auto_set_parameters": True,
+        "auto_rg_bound_percent": 0.2
 
-# fitting method and log file choice  #'leastsq',
- #   "fitting_method": 'differential_evolution', 
- #   "save_to_log": False,
- #   "log_file_name": 'auto_log_file',
-    "plot_fitting_curve": True,
-    "auto_set_parameters": False,
-    "auto_rg_bound_percent": 0.2
-
-}
-### * END OF INPUT PARAMETERS *
-
-
-q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I_q1_guinier_ff.csv")
-q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I_q2_guinier_ff.csv")
+    }
+    ### * END OF INPUT PARAMETERS *
 
 
-# Fits ln(I1/I2) with G function
+    # q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I_q1_guinier_ff.csv")
+    # q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I_q2_guinier_ff.csv")
 
-#fit_results = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
-fit_results = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
-G_approximation.print_fitted_results_with_errors(fit_results=fit_results)
+    # Ori's one
 
-print ("done!")
-# q_units = 'nm'
-# plt.figure(1)
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.title('Initial data')
-# plt.plot(q1_binned,I1_binned, label=f'I1')
-# plt.plot(q2_binned,I2_binned*(np.max(I1_binned)/np.max(I2_binned)*1.01), label=f'I2')
-# plt.xlabel(f'initial ln(q, 1/{q_units})')
-# plt.ylabel('initial ln(I)')
+    # q1_binned,I1_binned = csv_man.read_q_I_from_csv ("qI_guin_rg2_sig0.csv")
+    # q2_binned,I2_binned = csv_man.read_q_I_from_csv ("qI_guin_rg2_sig5.csv")
 
-# plt.figure(2)
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.title('Binned data')
-# plt.plot(q1_binned,I1_binned, label=f'binned I1')
-# plt.plot(q2_binned,I2_binned*(np.max(I1_binned)/np.max(I2_binned)*1.01), label=f'binned I2')
-# plt.xlabel(f'binned ln(q, 1/{q_units})')
-# plt.ylabel('binned ln(I)')
+    # Vadim unique one
+    q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I2_rg2_var0.0001_sx10_sy10_dect_1500_uniqueq.csv")
+    q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I1_rg2_var0.0001_sx5_sy5_dect_1500_uniqueq.csv")
 
-# plt.show()
+    q_units = 'nm'
+    # plt.figure(1)
+    # plt.xscale('log')
+    # plt.yscale('log')
+    # plt.title('Initial data')
+    # plt.plot(q1_binned,I1_binned, label=f'I1')
+    # plt.plot(q2_binned,I2_binned*(np.max(I1_binned)/np.max(I2_binned)*1.01), label=f'I2')
+    # plt.xlabel(f'initial ln(q, 1/{q_units})')
+    # plt.ylabel('initial ln(I)')
+
+    plt.figure(2)
+    plt.xscale('linear')
+    plt.yscale('linear')
+    plt.title('raw data')
+    plt.plot(q1_binned**2,np.log(I1_binned/I2_binned),'bo')
+    # plt.plot(q2_binned,I2_binned*(np.max(I1_binned)/np.max(I2_binned)*1.01), label=f'binned I2')
+    plt.xlabel(f'binned ln(q^2, 1/{q_units}^2)')
+    plt.ylabel('binned ln(I1/I2)')
+
+
+
+    # Fits ln(I1/I2) with G function
+
+  
+    fit_results = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
+    #G_approximation.print_fitted_results_with_errors(fit_results=fit_results)
+
+    print ("done!")
+
+
+
+    # plt.show()
 
 
 
