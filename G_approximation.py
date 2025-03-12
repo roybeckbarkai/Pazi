@@ -206,17 +206,23 @@ def adjust_bounds(lower_bounds, upper_bounds, epsilon=1e-8):
             new_upper.append(ub)
     return new_lower, new_upper
 
-def print_fitted_results_with_errors(fit_results):
-    params = fit_results["optimal_parameters"]
-    cov = fit_results["covariance"]
+def calculate_errors(fit_results):
+    """Calculate the standard errors from the covariance matrix."""
+    cov = fit_results.get("covariance", None)
+    params = fit_results.get("optimal_parameters", {})
 
-    # If covariance is not None, compute standard errors as sqrt of the diagonal elements.
     if cov is not None:
         errors = np.sqrt(np.diag(cov))
     else:
         errors = [None] * len(params)
 
-    # Specify the order of parameters expected by your model.
+    return errors
+
+def print_fitted_results(fit_results):
+    """Print the fitted parameters along with their errors."""
+    params = fit_results.get("optimal_parameters", {})
+    errors = calculate_errors(fit_results)
+    
     param_order = ["rg_fit", "f2_fit", "var_fit", "A_fit"]
 
     print("Fitted Parameters (value ± error):")
@@ -224,6 +230,8 @@ def print_fitted_results_with_errors(fit_results):
         value = params.get(param, None)
         error = errors[i] if errors[i] is not None else "N/A"
         print(f"  {param}: {value:.6g} ± {error:.6g}" if isinstance(error, float) else f"  {param}: {value} ± {error}")
+
+
 
 def G_fit(q1, I1, q2, I2,
           form_factor_name: Optional[str] = 'NaN',
@@ -338,14 +346,16 @@ def G_fit(q1, I1, q2, I2,
         A_initial = epsilon
 
 
+    
     # Perform Guinier estimation if requested
+    
+    rg1 = guinier_approximation.estimate_Rg(q1_masked, I1_masked, q_min, q_max)
+    rg2 = guinier_approximation.estimate_Rg(q1_masked, I2_masked, q_min, q_max)
+    rg_guinier = np.mean([rg1, rg2])
+    print ("auto Rg = ",rg_initial)
+    
     if (perform_guinier_estimation | auto_set_parameters):
-        rg1 = guinier_approximation.estimate_Rg(q1_masked, I1_masked, q_min, q_max)
-        rg2 = guinier_approximation.estimate_Rg(q1_masked, I2_masked, q_min, q_max)
-        rg_initial = np.mean([rg1, rg2])
-        print ("auto Rg = ",rg_initial)
-
-
+        rg_initial=rg_guinier
     # For fixed parameters, set lower and upper bounds equal to the initial guess.
     if not rg_free:
         rg_min = rg_initial
@@ -389,15 +399,24 @@ def G_fit(q1, I1, q2, I2,
     except Exception as e:
         print("Error during curve_fit:", e)
         return None
-
+    # Compute standard errors from covariance matrix
+    if pcov is not None:
+        errors = np.sqrt(np.diag(pcov))
+    else:
+        errors = [None] * len(popt)
     # Prepare a simple fit report
     fit_results = {
         "optimal_parameters": {
             "rg_fit": popt[0],
+            "rg_fit_error": errors[0],
             "f2_fit": popt[1],
+            "f2_fit_error": errors[1],
             "var_fit": popt[2],
-            "A_fit": popt[3]
-        },
+            "var_fit_error": errors[2],
+            "A_fit": popt[3],
+            "A_fit_error": errors[3],
+            "Rg_guinier": rg_guinier
+            },
         "covariance": pcov
     }
 

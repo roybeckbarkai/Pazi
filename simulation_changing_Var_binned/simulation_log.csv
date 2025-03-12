@@ -1,0 +1,19 @@
+binning,bins_number,filename,form_factor_name,normalization_on,px_number,px_size,q_max,q_min,return_unique,rg,sample_detector_distance,sigma_x,sigma_y,variance,wavelength
+True,1000,sim_000_rg2.000_variance0.010_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.01,0.154
+True,1000,sim_001_rg2.000_variance0.010_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.01,0.154
+True,1000,sim_002_rg2.000_variance0.100_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.1,0.154
+True,1000,sim_003_rg2.000_variance0.100_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.1,0.154
+True,1000,sim_004_rg2.000_variance0.200_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.2,0.154
+True,1000,sim_005_rg2.000_variance0.200_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.2,0.154
+True,1000,sim_006_rg2.000_variance0.300_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.3,0.154
+True,1000,sim_007_rg2.000_variance0.300_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.3,0.154
+True,1000,sim_008_rg2.000_variance0.400_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.4,0.154
+True,1000,sim_009_rg2.000_variance0.400_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.4,0.154
+True,1000,sim_010_rg2.000_variance0.500_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.5,0.154
+True,1000,sim_011_rg2.000_variance0.500_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.5,0.154
+True,1000,sim_012_rg2.000_variance0.700_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.7,0.154
+True,1000,sim_013_rg2.000_variance0.700_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.7,0.154
+True,1000,sim_014_rg2.000_variance0.800_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,0.8,0.154
+True,1000,sim_015_rg2.000_variance0.800_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,0.8,0.154
+True,1000,sim_016_rg2.000_variance1_sigma_x0.010.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,0.01,0.01,1,0.154
+True,1000,sim_017_rg2.000_variance1_sigma_x2.csv,guinier_ff,True,"[500, 500]",0.075,0.5,0.0001,False,2.0,1500,2,0.01,1,0.154

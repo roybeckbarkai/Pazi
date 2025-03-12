@@ -25,7 +25,8 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     detector_array = np.zeros((px_number[0], px_number[1])) #MAKE SIZE_LIKE Q_TABLE
 
     # Generate the distribution of Rgs
-    rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance) * rg)
+    #rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance) * rg)
+    rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance))   ### correct to new definiation of Variance in units of Rg^2
 
     # Get form factor function name for call from form_factor_methods
     ff_function = getattr(form_factor_methods, form_factor_name, None)

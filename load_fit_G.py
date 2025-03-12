@@ -146,19 +146,19 @@ if __name__ == "__main__":
         "f2_initial": 0,
         "f2_min": -1,
         "f2_max": 1,
-        "f2_free": False,
+        "f2_free": True,
 
     # Rg input
         "rg_initial": 2,
         "rg_min": 0.5,
-        "rg_max": 2.5,
+        "rg_max": 5,
         "rg_free": True,
         "perform_guinier_estimation": False,
 
         # Variance input
-        "var_initial": 0.001/4,
-        "var_min": 0.000005,
-        "var_max": 0.5,
+        "var_initial": 0.001,
+        "var_min": 0.00005,
+        "var_max": 3,
         "var_free": True,
 
     # A (scaling factor) input
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     #   "log_file_name": 'auto_log_file',
         "plot_fitting_curve": True,
         "auto_set_parameters": True,
-        "auto_rg_bound_percent": 0.2
+        "auto_rg_bound_percent": 0.5
 
     }
     ### * END OF INPUT PARAMETERS *
@@ -188,8 +188,15 @@ if __name__ == "__main__":
     # q2_binned,I2_binned = csv_man.read_q_I_from_csv ("qI_guin_rg2_sig5.csv")
 
     # Vadim unique one
-    q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I2_rg2_var0.0001_sx10_sy10_dect_1500_uniqueq.csv")
-    q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I1_rg2_var0.0001_sx5_sy5_dect_1500_uniqueq.csv")
+    #q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I2_rg2_var0.0001_sx10_sy10_dect_1500_uniqueq.csv")
+    #q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I1_rg2_var0.0001_sx5_sy5_dect_1500_uniqueq.csv")
+
+  #  filenames = ["simulation_results/sim_016_rg2.000_variance1_sigma_x0.010.csv","simulation_results/sim_017_rg2.000_variance1_sigma_x2.csv"]
+    filenames = ["simulation_changing_Var_binned/sim_002_rg2.000_variance0.100_sigma_x0.010.csv","simulation_changing_Var_binned/sim_003_rg2.000_variance0.100_sigma_x2.csv"]
+    
+    q2_binned,I2_binned = csv_man.read_q_I_from_csv (filenames[1])
+    q1_binned,I1_binned = csv_man.read_q_I_from_csv (filenames[0])
+
 
     q_units = 'nm'
     # plt.figure(1)
@@ -216,7 +223,7 @@ if __name__ == "__main__":
 
   
     fit_results = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
-    #G_approximation.print_fitted_results_with_errors(fit_results=fit_results)
+    G_approximation.print_fitted_results_with_errors(fit_results=fit_results)
 
     print ("done!")
 
