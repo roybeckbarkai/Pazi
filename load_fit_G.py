@@ -188,11 +188,10 @@ if __name__ == "__main__":
     # q2_binned,I2_binned = csv_man.read_q_I_from_csv ("qI_guin_rg2_sig5.csv")
 
     # Vadim unique one
-    #q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I2_rg2_var0.0001_sx10_sy10_dect_1500_uniqueq.csv")
-    #q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I1_rg2_var0.0001_sx5_sy5_dect_1500_uniqueq.csv")
+    # q2_binned,I2_binned = csv_man.read_q_I_from_csv ("I2_rg2_var0.0001_sx10_sy10_dect_1500_uniqueq.csv")
+    # q1_binned,I1_binned = csv_man.read_q_I_from_csv ("I1_rg2_var0.0001_sx5_sy5_dect_1500_uniqueq.csv")
 
-  #  filenames = ["simulation_results/sim_016_rg2.000_variance1_sigma_x0.010.csv","simulation_results/sim_017_rg2.000_variance1_sigma_x2.csv"]
-    filenames = ["simulation_changing_Var_binned/sim_002_rg2.000_variance0.100_sigma_x0.010.csv","simulation_changing_Var_binned/sim_003_rg2.000_variance0.100_sigma_x2.csv"]
+    filenames = ["simulation_changing_Var_binned/sim_001_rg2.000_variance0.010_sigma_x1.csv","simulation_changing_Var_binned/sim_002_rg2.000_variance0.010_sigma_x5.csv"]
     
     q2_binned,I2_binned = csv_man.read_q_I_from_csv (filenames[1])
     q1_binned,I1_binned = csv_man.read_q_I_from_csv (filenames[0])
@@ -222,7 +221,7 @@ if __name__ == "__main__":
     # Fits ln(I1/I2) with G function
 
   
-    fit_results = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
+    fit_results, = G_approximation.G_fit(q1_binned, I1_binned, q2_binned, I2_binned, **fitting_parameters)
     G_approximation.print_fitted_results_with_errors(fit_results=fit_results)
 
     print ("done!")

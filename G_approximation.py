@@ -233,6 +233,12 @@ def print_fitted_results(fit_results):
 
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+from scipy.optimize import curve_fit
+from typing import Optional
+
 def G_fit(q1, I1, q2, I2,
           form_factor_name: Optional[str] = 'NaN',
           f2_initial: Optional[float] = 0, f2_min: Optional[float] = -1, f2_max: Optional[float] = 1, f2_free: Optional[bool] = True,
@@ -241,89 +247,112 @@ def G_fit(q1, I1, q2, I2,
           var_initial: Optional[float] = 0, var_min: Optional[float] = 0, var_max: Optional[float] = 1, var_free: Optional[bool] = True,
           A_initial: Optional[float] = 0, A_min: Optional[float] = -1e38, A_max: Optional[float] = 1e38, A_free: Optional[bool] = True,
           perform_guinier_estimation: Optional[bool] = False,
-          plot_fitting_curve: Optional[bool] = False,
+          plot_fitting_curve: Optional[bool] = False,  # Currently unused in this version
           maxfev: Optional[int] = 10000,
-          auto_set_parameters: Optional[bool]=True,
-          auto_rg_bound_percent: Optional [float] = .1
+          auto_set_parameters: Optional[bool] = True,
+          auto_rg_bound_percent: Optional[float] = 0.1
           ):
     """
     Fits the log intensity ratio data using the G_function model and SciPy's curve_fit.
 
-    The function processes two data sets (q1, I1) and (q2, I2) to compute
-    logdI = log(I1/I2) (normalized by its first value) and then fits it with the
-    G_function model defined elsewhere.
+    The function processes two data sets (q1, I1) and (q2, I2) to compute:
+
+        logdI = ln(I1 / I2)
+
+    within a chosen q-range, then fits it with G_function (defined elsewhere).
+    The resulting fit parameters and masked data are returned.
 
     Parameters
     ----------
     q1, I1, q2, I2 : array_like
-        Two sets of intensities vs. q.
+        Two sets of intensities vs. q (1D arrays).
     form_factor_name : str, optional
         Name of the form factor to determine f2. If 'NaN' or unrecognized,
         f2 is treated as a free parameter.
     f2_initial, f2_min, f2_max : float, optional
-        Initial guess and bounds for f2 parameter.
+        Initial guess and bounds for the f2 parameter.
     f2_free : bool, optional
-        If True, f2 is free to vary; if False, it will be fixed.
+        If True, f2 is allowed to vary; if False, f2 is fixed at f2_initial.
     q_min, q_max : float, optional
-        q-range to use. If None, the overlapping range of q1 and q2 is used.
+        q-range to use for fitting. If None, the range is inferred from q2.
     rg_initial, rg_min, rg_max : float, optional
-        Initial guess and bounds for radius of gyration.
+        Initial guess and bounds for the radius of gyration rg.
     rg_free : bool, optional
-        If True, rg is free to vary.
+        If True, rg is allowed to vary; if False, rg is fixed.
     var_initial, var_min, var_max : float, optional
-        Initial guess and bounds for variance.
+        Initial guess and bounds for the variance parameter.
     var_free : bool, optional
-        If True, variance is free to vary.
+        If True, variance is allowed to vary; if False, variance is fixed.
     A_initial, A_min, A_max : float, optional
         Initial guess and bounds for the scaling factor A.
     A_free : bool, optional
-        If True, A is free to vary.
+        If True, A is allowed to vary; if False, A is fixed.
     perform_guinier_estimation : bool, optional
-        If True, use Guinier approximation to estimate rg from the data.
+        If True, uses a Guinier approximation to estimate rg from the data.
     plot_fitting_curve : bool, optional
-        If True, plot the data, the best fit, and the initial guess curve.
+        Currently unused in this code snippet. If True, you may want to add code
+        to visualize the fit. 
     maxfev : int, optional
         Maximum number of function evaluations for curve_fit.
     auto_set_parameters : bool, optional
-        Set Rg by Guinier, Rg bound by auto_rg_bound_percent around it, and A accourdingly   
-    auto_rg_bound_percent: float, optional
-        how much Rg can vary around its mean if auto_set_parameter is true
-    
+        If True, automatically sets rg_initial using Guinier, adjusts rg bounds,
+        and calculates A_initial, A_min, and A_max accordingly.
+    auto_rg_bound_percent : float, optional
+        If auto_set_parameters is True, controls how much rg can vary around
+        its Guinier estimate.
+
     Returns
     -------
     fit_results : dict
-        A dictionary containing the optimal parameters and the covariance matrix.
+        A dictionary containing the fitted parameters, their errors, and the covariance matrix.
+    q1_masked : ndarray
+        The q-values used in the fit (after applying the q-range mask).
+    logdI : ndarray
+        The log intensity ratio ln(I1/I2) used in the fit.
+    G_final : ndarray
+        The model values G_function(q1_masked, *popt) using the fitted parameters.
+    G_initial : ndarray
+        The model values G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial).
+
+    Notes
+    -----
+    - This function assumes that G_function, adjust_bounds, and 
+      guinier_approximation.estimate_Rg are defined elsewhere.
+    - For best results, ensure that q1 and q2 share the same q-points or are 
+      appropriately interpolated or binned beforehand.
     """
-    epsilon=1e-14
-    # Warn if q ranges differ
+    epsilon = 1e-14
+
+    # Warn if q arrays differ
     if not np.array_equal(q1, q2):
-        print('q ranges of the data sets do not match. Consider binning the data.')
+        print('q ranges of the data sets do not match. Consider binning or interpolating the data.')
         return -1
-    # Determine common q-range if not provided
+
+    # Determine default q-range if none provided
     if q_min is None:
-        q_min =  np.min(q2)
+        q_min = np.min(q2)
     if q_max is None:
         q_max = np.max(q2)
 
-    # Create masks for q-range selection
-    maskq1 = (q1 >= q_min) & (q1 <= q_max)
-    # maskq2 = (q2 >= q_min) & (q2 <= q_max)
-
-    # Ensure data are 1D arrays
+    # Create a mask for the chosen q-range
     q1 = np.array(q1).flatten()
-    # q2 = np.array(q2).flatten()
     I1 = np.array(I1).flatten()
     I2 = np.array(I2).flatten()
+    maskq1 = (q1 >= q_min) & (q1 <= q_max)
 
     q1_masked = q1[maskq1]
-    # q2_masked = q2[maskq1]
     I1_masked = I1[maskq1]
     I2_masked = I2[maskq1]
 
-    # Compute normalized log intensity ratio
+    # Compute the log intensity ratio
     logdI = np.log(I1_masked / I2_masked)
-    f2_dictionary = {'guinier_ff': 0, 'sphere_ff': 1/126, 'gaussian_ff': -1/36}
 
+    # Map form_factor_name to an f2_initial if recognized
+    f2_dictionary = {
+        'guinier_ff': 0,
+        'sphere_ff': 1/126,
+        'gaussian_ff': -1/36
+    }
 
     # Determine f2 parameter
     if form_factor_name == 'NaN':
@@ -337,26 +366,24 @@ def G_fit(q1, I1, q2, I2,
         f2_free = True
         print('Unrecognized form factor name; f2 is fitted as a free parameter.')
 
-    # Update q range from masked data
+    # Update q_min and q_max from masked data
     q_min = np.min(q1_masked)
     q_max = np.max(q1_masked)
-      
-    # Ensure scaling factor is nonzero
+
+    # Ensure scaling factor is nonzero if initial guess was 0
     if A_initial == 0:
         A_initial = epsilon
 
-
-    
-    # Perform Guinier estimation if requested
-    
+    # Optionally perform Guinier estimation
     rg1 = guinier_approximation.estimate_Rg(q1_masked, I1_masked, q_min, q_max)
     rg2 = guinier_approximation.estimate_Rg(q1_masked, I2_masked, q_min, q_max)
     rg_guinier = np.mean([rg1, rg2])
-    print ("auto Rg = ",rg_initial)
-    
-    if (perform_guinier_estimation | auto_set_parameters):
-        rg_initial=rg_guinier
-    # For fixed parameters, set lower and upper bounds equal to the initial guess.
+    # print("auto Rg =", rg_guinier)
+
+    if perform_guinier_estimation or auto_set_parameters:
+        rg_initial = rg_guinier
+
+    # If parameters are not free, fix their bounds to the initial value
     if not rg_free:
         rg_min = rg_initial
         rg_max = rg_initial
@@ -370,41 +397,44 @@ def G_fit(q1, I1, q2, I2,
         A_min = A_initial
         A_max = A_initial
 
+    # Automatically set bounds for rg and A if requested
     if auto_set_parameters:
-        
-        rg_min = np.max([epsilon,rg_initial*(1-auto_rg_bound_percent)])
-        rg_max = rg_initial*(1+auto_rg_bound_percent)
-        
+        rg_min = max(epsilon, rg_initial * (1 - auto_rg_bound_percent))
+        rg_max = rg_initial * (1 + auto_rg_bound_percent)
+
         logdI_zero = logdI[0]
+        # Calculate A_initial based on the 0th q-value using G_function(0, ...), assumed to be valid
         A_initial = logdI_zero / G_function(0, rg_initial, f2_initial, var_initial, 1)
-        A_max = np.max ([A_initial * (1-auto_rg_bound_percent),A_initial * (1+auto_rg_bound_percent)])
-        A_min = np.min ([A_initial * (1-auto_rg_bound_percent),A_initial * (1+auto_rg_bound_percent)])
-        
-        # A_max =  np.max([epsilon,logdI_zero / G_function(0, rg_max, f2_initial, var_max, 1)])
-        # A_min =  logdI_zero / G_function(0, rg_min, f2_initial, var_min, 1)
-        # print ("ln(I1(0)/I2(0))=",logdI_zero)
-        
+        # Expand/minimize A around the new A_initial
+        A_max = max(A_initial * (1 - auto_rg_bound_percent), A_initial * (1 + auto_rg_bound_percent))
+        A_min = min(A_initial * (1 - auto_rg_bound_percent), A_initial * (1 + auto_rg_bound_percent))
+
+    # Collect bounds
     lower_bounds = [rg_min, f2_min, var_min, A_min]
     upper_bounds = [rg_max, f2_max, var_max, A_max]
-    
-    # Adjust bounds to ensure each lower bound is strictly less than its upper bound.
+
+    # Adjust bounds to ensure they are valid (assumes adjust_bounds is defined elsewhere)
     lower_bounds, upper_bounds = adjust_bounds(lower_bounds, upper_bounds, epsilon)
-    
-    # Build initial guess vector and bounds
-    p0 = [rg_initial,f2_initial, var_initial, A_initial]
-    
-    # Perform curve fitting using SciPy's curve_fit
+
+    # Build initial guess array
+    p0 = [rg_initial, f2_initial, var_initial, A_initial]
+
+    # Fit logdI vs q using SciPy curve_fit
     try:
-        popt, pcov = curve_fit(G_function, q1_masked, logdI, p0=p0, bounds=(lower_bounds, upper_bounds), maxfev=maxfev)
+        popt, pcov = curve_fit(G_function, q1_masked, logdI,
+                               p0=p0, bounds=(lower_bounds, upper_bounds),
+                               maxfev=maxfev)
     except Exception as e:
         print("Error during curve_fit:", e)
         return None
-    # Compute standard errors from covariance matrix
+
+    # Compute standard errors
     if pcov is not None:
         errors = np.sqrt(np.diag(pcov))
     else:
         errors = [None] * len(popt)
-    # Prepare a simple fit report
+
+    # Organize results
     fit_results = {
         "optimal_parameters": {
             "rg_fit": popt[0],
@@ -416,28 +446,104 @@ def G_fit(q1, I1, q2, I2,
             "A_fit": popt[3],
             "A_fit_error": errors[3],
             "Rg_guinier": rg_guinier
-            },
+        },
         "covariance": pcov
     }
 
-    # Optionally save results to a log file
-    # (Assumes save_read_convert.save_fit_results_to_log is implemented)
-    # Uncomment the next lines if you want to save the fit report.
-    # report_str = "\n".join(f"{key}: {val}" for key, val in fit_results["optimal_parameters"].items())
-    # save_read_convert.save_fit_results_to_log("auto_log_file", report_str)
+    # Calculate model values for the initial and final parameters
+    G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
+    G_final = G_function(q1_masked, *popt)
 
-    # Optionally plot the fitting curve
-    if plot_fitting_curve:
-        plt.figure(figsize=(8, 6))
-        plt.plot(q1_masked**2, logdI, 'bo', label='Data')
-        plt.plot(q1_masked**2, G_function(q1_masked, *popt), 'r-', label='Best fit')
-        # Compute and plot the curve using the initial parameters
-        G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
-        plt.plot(q1_masked**2, G_initial, 'k--', label='Initial parameters')
-        plt.xlabel('q^2')
-        plt.ylabel('ln(I1/I2)  (normalized)')
-        plt.title('G_function Fitting')
-        plt.legend()
-        plt.show()
+    # Return fit dictionary and relevant arrays
+    return fit_results, q1_masked, logdI, G_final, G_initial    
 
-    return fit_results
+def plot_G_function_fits(q1_masked, logdI, G_final, G_initial, fit_results,
+                         filename1=None, filename2=None):
+    """
+    Plot data (q1_masked vs. logdI) along with two curves:
+      - G_final (the best fit)
+      - G_initial (the initial guess)
+
+    Parameters
+    ----------
+    q1_masked : ndarray
+        The masked q-values used in the fit (1D array).
+    logdI : ndarray
+        The log intensity ratio, ln(I1/I2), used for plotting (1D array).
+    G_final : ndarray
+        The final fitted G-function values for each q in q1_masked.
+    G_initial : ndarray
+        The initial G-function values for each q in q1_masked.
+    fit_results : dict
+        A dictionary with keys "optimal_parameters" and "covariance", e.g.:
+
+        fit_results= {
+            "optimal_parameters": {
+                "rg_fit": popt[0],
+                "rg_fit_error": errors[0],
+                "f2_fit": popt[1],
+                "f2_fit_error": errors[1],
+                "var_fit": popt[2],
+                "var_fit_error": errors[2],
+                "A_fit": popt[3],
+                "A_fit_error": errors[3],
+                "Rg_guinier": rg_guinier
+            },
+            "covariance": pcov
+        }
+
+    filename1 : str, optional
+        Name/path of the first file, to be displayed in the annotation.
+    filename2 : str, optional
+        Name/path of the second file, to be displayed in the annotation.
+
+    Returns
+    -------
+    None
+        Displays a Matplotlib figure with the data, initial guess, and best fit.
+    """
+
+    # Extract the final fit parameters from the fit_results dictionary
+    optimal_params = fit_results["optimal_parameters"]
+    rg_fit = optimal_params["rg_fit"]       # e.g., popt[0]
+    var_fit = optimal_params["var_fit"]     # e.g., popt[2]
+
+    # Create the plot
+    plt.figure(figsize=(8, 6))
+    
+    # Plot the raw data points
+    plt.plot(q1_masked**2, logdI, 'bo', label='Data')
+
+    # Plot the best fit
+    plt.plot(q1_masked**2, G_final, 'r-', label='Best fit')
+
+    # Plot the initial guess
+    plt.plot(q1_masked**2, G_initial, 'k--', label='Initial parameters')
+
+    # Label and title
+    plt.xlabel('q^2')
+    plt.ylabel('ln(I1/I2) (normalized)')
+    plt.title('G_function Fitting')
+
+    # Build annotation string
+    annotation = ""
+    if filename1 is not None:
+        annotation += f"File 1: {filename1}\n"
+    if filename2 is not None:
+        annotation += f"File 2: {filename2}\n"
+
+    # Here we assume "rg_fit" is the final Rg and "var_fit" is the final V
+    annotation += f"Rg: {rg_fit:.3f}\n"
+    annotation += f"V: {var_fit:.3f}\n"
+
+    # Place annotation in the upper left corner of the plot
+    plt.gca().text(
+        0.05, 0.95, annotation,
+        transform=plt.gca().transAxes,
+        fontsize=10,
+        verticalalignment='top',
+        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    )
+
+    plt.legend()
+    plt.show()

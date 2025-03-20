@@ -5,7 +5,8 @@ from numba.core.cgutils import sizeof
 import form_factor_methods
 from scipy.ndimage import gaussian_filter
 from typing import Tuple, Optional, Callable, Union, List
-
+import matplotlib.pyplot as plt
+ 
 # Creates q 2d array based on simulation parameters
 def create_q_table(px_number, px_size, sample_detector_distance, wavelength, beam_center: Optional[float]=[0,0]):
     # Generate xy_table and calculate qtable (these values do not change across iterations)
@@ -82,16 +83,21 @@ def flatten_intensity(q_array: np.ndarray,
     sorted_idx = np.argsort(q_array.flatten())
     q_flattened = q_array.flatten()[sorted_idx]
     intensity_flattened = count_array.flatten()[sorted_idx]
+    
+
+    
+    
     if return_unique:
-        # Create a DataFrame
-        df = pandas.DataFrame({'q': q_flattened, 'count': intensity_flattened})
+        q_rounded = np.round(q_flattened, decimals=10)
+        # Create a DataFrame using the rounded q values
+        df = pandas.DataFrame({'q': q_rounded, 'count': intensity_flattened})
         # Group by the 'q' values and compute the mean of the 'count' values
         grouped_df = df.groupby('q', as_index=False)['count'].mean()
-        # Extract the unique R values and their corresponding average counts
+        # Extract the unique q values and their corresponding average counts
         unique_Q = grouped_df['q'].values
         average_counts = grouped_df['count'].values
         # Compute the normalization factor
-        norm_factor = unique_Q*4*np.pi * sample_detector_distance ** 2 / (px_size**2) * (1 - ((wavelength*unique_Q) ** 2) / 8 / np.pi**2)** -3
+        norm_factor = 4*np.pi * sample_detector_distance ** 2 / (px_size**2) * (1 - ((wavelength*unique_Q) ** 2) / 8 / np.pi**2)** -3
         # Mask the data based on the given q_min and q_max if applicable
         if (q_min is not None) and (q_max is not None):
             mask = (unique_Q >= q_min) & (unique_Q <= q_max)
@@ -99,12 +105,39 @@ def flatten_intensity(q_array: np.ndarray,
             mask = (unique_Q >= q_min)
         elif (q_max is not None):
             mask = (unique_Q <= q_max)
-        else: mask = True
-        #Check if the normalization is applied
+        else:
+            mask = True
+ 
+
+
+        plt.show()
+        # Return normalized or raw counts based on the flag
         if normalization_on:
             return unique_Q[mask], (average_counts * norm_factor)[mask]
         else:
             return unique_Q[mask], average_counts[mask]
+        # Create a DataFrame
+        # df = pandas.DataFrame({'q': q_flattened, 'count': intensity_flattened})
+        # # Group by the 'q' values and compute the mean of the 'count' values
+        # grouped_df = df.groupby('q', as_index=False)['count'].mean()
+        # # Extract the unique R values and their corresponding average counts
+        # unique_Q = grouped_df['q'].values
+        # average_counts = grouped_df['count'].values
+        # # Compute the normalization factor
+        # norm_factor = unique_Q*4*np.pi * sample_detector_distance ** 2 / (px_size**2) * (1 - ((wavelength*unique_Q) ** 2) / 8 / np.pi**2)** -3
+        # # Mask the data based on the given q_min and q_max if applicable
+        # if (q_min is not None) and (q_max is not None):
+        #     mask = (unique_Q >= q_min) & (unique_Q <= q_max)
+        # elif (q_min is not None):
+        #     mask = (unique_Q >= q_min)
+        # elif (q_max is not None):
+        #     mask = (unique_Q <= q_max)
+        # else: mask = True
+        # #Check if the normalization is applied
+        # if normalization_on:
+        #     return unique_Q[mask], (average_counts * norm_factor)[mask]
+        # else:
+        #     return unique_Q[mask], average_counts[mask]
     else:
         if normalization_on:
             # Return the flattened and sorted arrays directly

@@ -30,10 +30,15 @@ def estimate_Rg(q, intensity, q_min, q_max):
     # Take the natural logarithm of the intensity
     ln_intensity = np.log(intensity_guinier)
     q_squared = q[mask] ** 2
-
+    
     # Perform a linear fit using scipy.optimize.curve_fit
     popt, pcov = curve_fit(guinier_func, q_squared, ln_intensity)
     ln_I0, Rg_squared = popt
+    if (Rg_squared<0):
+        print ("Erorr estimating Rg - Negative value")
+        print ("Rg^2= ",Rg_squared)
+        return np.nan
+    
 
     # Calculate Rg
     rg_est = np.sqrt(Rg_squared)
@@ -41,8 +46,6 @@ def estimate_Rg(q, intensity, q_min, q_max):
     # Check if q * Rg < 1.3 for all q in the Guinier region
     if np.any(q * rg_est >= 1.3):
         print("Warning: Some q values in the Guinier region exceed the validity limit (q * Rg < 1.3).")
-    else:
-        print("All q values in the Guinier region satisfy q * Rg < 1.3.")
 
     return rg_est
 

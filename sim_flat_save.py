@@ -110,7 +110,7 @@ simulation_parameters_1 = {
     "sample_detector_distance": 1500,  # in mm
 # Flattening parameters
     "normalization_on": True,
-    "return_unique": False,
+    "return_unique": True,
     "q_min": 0.0001,
     "q_max": 0.5
 }
@@ -131,7 +131,7 @@ simulation_parameters_2 = {
     "sample_detector_distance": 1500,  # in mm
 # Flattening parameters
     "normalization_on": True,
-    "return_unique": False,
+    "return_unique": True,
     "q_min": 0.00001,
     "q_max": 0.5
 }
