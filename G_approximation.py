@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 #List of f2 values based on the form factor
 
 
-def G_function(x, Rg, C2, V, A):
+def G_function_new(x, Rg, C2, V, A):
     """
     Compute G(q) = ln(I1(q)/I2(q)) = A*(g0 + g1*q^2 + g2*q^4 + g3*q^6)
     where the coefficients are defined as follows:
@@ -248,7 +248,8 @@ def G_fit(q1, I1, q2, I2,
           A_initial: Optional[float] = 0, A_min: Optional[float] = -1e38, A_max: Optional[float] = 1e38, A_free: Optional[bool] = True,
           perform_guinier_estimation: Optional[bool] = False,
           plot_fitting_curve: Optional[bool] = False,  # Currently unused in this version
-          maxfev: Optional[int] = 10000,
+          maxfev: Optional[int] = 1e7,
+          auto_init_A: Optional[bool] = True,
           auto_set_parameters: Optional[bool] = True,
           auto_rg_bound_percent: Optional[float] = 0.1
           ):
@@ -398,13 +399,14 @@ def G_fit(q1, I1, q2, I2,
         A_max = A_initial
 
     # Automatically set bounds for rg and A if requested
-    if auto_set_parameters:
-        rg_min = max(epsilon, rg_initial * (1 - auto_rg_bound_percent))
-        rg_max = rg_initial * (1 + auto_rg_bound_percent)
-
+    if auto_set_parameters or auto_init_A:
         logdI_zero = logdI[0]
         # Calculate A_initial based on the 0th q-value using G_function(0, ...), assumed to be valid
-        A_initial = logdI_zero / G_function(0, rg_initial, f2_initial, var_initial, 1)
+        A_initial = logdI_zero / G_function_new(0, rg_initial, f2_initial, var_initial, 1)
+    
+    if auto_set_parameters:
+        rg_min = max(epsilon, rg_initial * (1 - auto_rg_bound_percent))
+        rg_max = rg_initial * (1 + auto_rg_bound_percent)  
         # Expand/minimize A around the new A_initial
         A_max = max(A_initial * (1 - auto_rg_bound_percent), A_initial * (1 + auto_rg_bound_percent))
         A_min = min(A_initial * (1 - auto_rg_bound_percent), A_initial * (1 + auto_rg_bound_percent))
@@ -418,10 +420,9 @@ def G_fit(q1, I1, q2, I2,
 
     # Build initial guess array
     p0 = [rg_initial, f2_initial, var_initial, A_initial]
-
     # Fit logdI vs q using SciPy curve_fit
     try:
-        popt, pcov = curve_fit(G_function, q1_masked, logdI,
+        popt, pcov = curve_fit(G_function_new, q1_masked, logdI,
                                p0=p0, bounds=(lower_bounds, upper_bounds),
                                maxfev=maxfev)
     except Exception as e:
@@ -451,8 +452,8 @@ def G_fit(q1, I1, q2, I2,
     }
 
     # Calculate model values for the initial and final parameters
-    G_initial = G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
-    G_final = G_function(q1_masked, *popt)
+    G_initial = G_function_new(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
+    G_final = G_function_new(q1_masked, *popt)
 
     # Return fit dictionary and relevant arrays
     return fit_results, q1_masked, logdI, G_final, G_initial    
