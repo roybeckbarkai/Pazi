@@ -18,7 +18,7 @@ def G_function_new(x, Rg, C2, V, A):
     Compute G(q) = ln(I1(q)/I2(q)) = A*(g0 + g1*Q^2 + g2*Q^4 + g3*Q^6)
     where the coefficients are defined as follows:
       x=q
-      Q=q*Rg  
+      Q=(q*Rg)^2  
       g0 = -3* (1 + V)
       g1  = (1+18*C2+ 6*(9*C2 +1)*V)
       g2 = -(6*C2+ V*(72*C2+4/3))
@@ -45,7 +45,7 @@ def G_function_new(x, Rg, C2, V, A):
     
     A = float(A)
     Rg = float(Rg)
-    V = float(V) * Rg**2
+    V = float(V) / Rg**2  
     C2 = float(C2)
        
     if Rg <= 0:
@@ -54,7 +54,7 @@ def G_function_new(x, Rg, C2, V, A):
         raise ValueError("Variance V must be nonnegative.")
     
     # Compute Q = q * Rg.
-    Q = np.array(x, dtype=float) * Rg
+    Q = (np.array(x, dtype=float) * Rg) ** 2
     if np.any(Q < 0):
         raise ValueError("All q values must be nonnegative.")
     
@@ -64,8 +64,8 @@ def G_function_new(x, Rg, C2, V, A):
     g2 = -(6 * C2 + V * (72 * C2 + 4/3))
     g3 = (9/2) * C2 + (315 * C2**2 + 2 * C2) * V
     
-    # Calculate G(q) = A*(g0 + g1*Q^2 + g2*Q^4 + g3*Q^6).
-    G = A * (g0 + g1 * Q**2 + g2 * Q**4 + g3 * Q**6)
+    # Calculate G(q) = A*(g0 + g1*Q + g2*Q^2 + g3*Q^3).
+    G = A * (g0 + g1 * Q + g2 * Q**2 + g3 * Q**3)
     return G
     
    
