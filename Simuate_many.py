@@ -26,10 +26,10 @@ def main():
         "sample_detector_distance": 1500,  # in mm
         # Flattening parameters:
         "normalization_on": True,
-        "return_unique": False,
+        "return_unique": True,
         "q_min": 0.0001,
         "q_max": 0.5,
-        "binning": True,
+        "binning": False,
         "bins_number": 1000 
     }
     
@@ -38,11 +38,11 @@ def main():
     vary_params = {
         "rg": [2.0],          # example values for rg (in nm)
         "variance": [0.01, 0.1, 0.2, 0.3, 0.4, 0.5 , 0.7, 0.8, 1],
-        "sigma_x":[0.01 , 2]
+        "sigma_x":[0.01, 1 , 5]
     }
     
     # Designated folder to save simulation results.
-    save_folder = "simulation_changing_Var_binned"
+    save_folder = "simulation_changing_Var"
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     
