@@ -45,7 +45,7 @@ def G_function_new(x, Rg, C2, V, A):
     
     A = float(A)
     Rg = float(Rg)
-    V = float(V) / Rg**2  
+    V = float(V) / (Rg**2)  # normalization to unit-less value
     C2 = float(C2)
        
     if Rg <= 0:

@@ -261,13 +261,14 @@ def run_fitting_ui(log_file, results_folder):
                 sim_var = float(fixed.get("variance", np.nan))
                 sim_f2 = float(fixed.get("f2_initial", 0))
                 fit_opt = pair["fit_results"]["optimal_parameters"]
+                emp_var = float(fixed.get("empirical_var", 0))
                 print ("fit_opt[rg_fit]",fit_opt["rg_fit"])
                 fitted_rg = float(fit_opt.get("rg_fit", np.nan))
                 fitted_var = float(fit_opt.get("var_fit", np.nan))
                 fitted_f2 = float(fit_opt.get("f2_fit", np.nan))
                 
                 rg_ratio = (fitted_rg -sim_rg) / sim_rg if sim_rg != 0 else np.nan
-                var_ratio =(fitted_var - sim_var) / sim_var if sim_var != 0 else np.nan
+                var_ratio =(fitted_var - emp_var) / emp_var if emp_var != 0 else np.nan
                 f2_ratio = (fitted_f2-sim_f2) / sim_f2 if sim_f2 != 0 else np.nan
                 
                 y_rg.append(rg_ratio)

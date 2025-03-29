@@ -38,21 +38,28 @@ def main():
     vary_params = {
         "rg": [2.0],          # example values for rg (in nm)
         "variance": [0.01, 0.1, 0.2, 0.3, 0.4, 0.5 , 0.7, 0.8, 1],
-        "sigma_x":[0.01, 1 , 5]
+        "sigma_x":[1 , 5]
     }
     
     # Designated folder to save simulation results.
-    save_folder = "simulation_changing_Var"
+    save_folder = "simulation_changing_Var_new"
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     
     # Prepare a log file to record simulation parameters and the filename for each simulation.
     log_filename = os.path.join(save_folder, "simulation_log.csv")
-    # Create a list of keys for the log. Here we log all keys in the default and varied parameters.
-    # (If some keys appear in both, they will appear only once.)
-    log_fields = sorted(set(list(sim_params_default.keys()) + list(vary_params.keys()) + ["filename"]))
-    log_rows = []
     
+    # Create a list of keys for the log. 
+    # Include "empirical_var" so we can record the simulation result.
+    log_fields = sorted(
+        set(
+            list(sim_params_default.keys()) 
+            + list(vary_params.keys()) 
+            + ["filename", "empirical_var"]
+        )
+    )
+    
+    log_rows = []
     # Create all permutations (combinations) of the varied parameters.
     vary_keys = list(vary_params.keys())
     vary_values_product = list(itertools.product(*(vary_params[k] for k in vary_keys)))
@@ -67,7 +74,7 @@ def main():
         
         # Run the simulation using your provided simulation function.
         # This function returns q and I - 2D data.
-        q, I = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
+        q, I, empirical_var = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
         
         
         if sim_params["binning"]:
@@ -100,6 +107,9 @@ def main():
         for key in log_fields:
             if key == "filename":
                 log_entry[key] = filename
+            elif key == "empirical_var":
+                # Record the computed empirical variance
+                log_entry[key] = empirical_var
             elif key in sim_params:
                 log_entry[key] = sim_params[key]
             else:

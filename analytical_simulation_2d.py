@@ -20,6 +20,72 @@ def create_q_table(px_number, px_size, sample_detector_distance, wavelength, bea
     qtable = 4 * np.pi * sint / wavelength
     return qtable
 
+def validate_and_summarize(x, p, expected_mean, expected_variance, tol=1e-4):
+    """
+    Given discrete points x and probabilities p, compute and validate:
+      1) sum of p_i  (should be ~ 1)
+      2) sum of p_i * x_i  (should be ~ expected_mean)
+      3) empirical variance from the discrete distribution:
+           sum of p_i * (x_i^2) - (sum of p_i * x_i)^2
+         should be ~ expected_variance.
+
+    Prints a warning if any quantity is outside the specified tolerance.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        1D array of discrete points (x_i).
+    p : np.ndarray
+        1D array of probabilities (p_i), same length as x.
+    expected_mean : float
+        The mean we expect (µ).
+    expected_variance : float
+        The variance we expect (σ²).
+    tol : float
+        Tolerance for checking each sum against its expected value.
+
+    Returns
+    -------
+    sum_p : float
+        sum of p_i
+    sum_px : float
+        sum of p_i * x_i
+    sum_px2 : float
+        sum of p_i * (x_i)^2
+    emp_var : float
+        empirical variance of the distribution = sum_px2 - (sum_px)^2
+    """
+    
+    if len(x) != len(p):
+        raise ValueError("x and p must have the same length.")
+    if (p < 0).any():
+        raise ValueError("All probabilities p_i must be non-negative.")
+
+    # Calculate core sums
+    sum_p   = np.sum(p)
+    sum_px  = np.sum(p * x)
+    sum_px2 = np.sum(p * (x**2))
+    
+    # Calculate empirical variance from discrete distribution
+    emp_var = sum_px2 - (sum_px**2)
+
+    # 1) Check sum of probabilities ~ 1
+    if not np.isclose(sum_p, 1.0, atol=tol):
+        print(f"WARNING: sum of p_i = {sum_p:.6f}, "
+              f"not within ±{tol} of 1.0")
+
+    # 2) Check mean ~ expected_mean
+    if not np.isclose(sum_px, expected_mean, atol=tol):
+        print(f"WARNING: mean = {sum_px:.6f}, "
+              f"not within ±{tol} of expected mean = {expected_mean}")
+
+    # 3) Check empirical variance ~ expected_variance
+    if not np.isclose(emp_var, expected_variance, atol=tol):
+        print(f"WARNING: variance = {emp_var:.6f}, "
+              f"not within ±{tol} of expected variance = {expected_variance}")
+
+    return sum_p, sum_px, sum_px2, emp_var
+
 # Calculates 2d count array
 def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength):
     # Initialize the detector array based in pixel number
@@ -28,7 +94,9 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     # Generate the distribution of Rgs
     #rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance) * rg)
     rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance))   ### correct to new definiation of Variance in units of Rg^2
-
+    sum_p, sum_p_x, sum_p_x2,emp_var = validate_and_summarize (rg_array,distribution_,rg, variance)
+    
+    # print (f"sum p_i= {sum_p}, sum_p_x={sum_p_x}, and sum_p_x2={sum_p_x2}\n")
     # Get form factor function name for call from form_factor_methods
     ff_function = getattr(form_factor_methods, form_factor_name, None)
     if not callable(ff_function):
@@ -43,7 +111,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     # Gaussian convolution of the 2D array based on the given sigmas
     Convoluted_detector_array = gaussian_filter(detector_array, sigma=[sigma_x, sigma_y])
 
-    return Convoluted_detector_array
+    return Convoluted_detector_array, emp_var
 
 #Flatten and normalize intensity data from 2D arrays to 1D arrays
 '''
@@ -175,7 +243,7 @@ def single_analytical_simulation_flattened(params):
 
     # Runs the analytical calculation of 2D intensity profile
     # Outputs 2D intensity distribution: I_array
-    I_array = analytical_calculate_single_2d(
+    I_array, empirical_var = analytical_calculate_single_2d(
         params["form_factor_name"], params["rg"], params["variance"],
         params["sigma_x"], params["sigma_y"], q_table,
         params["px_number"], params["px_size"],
@@ -194,7 +262,7 @@ def single_analytical_simulation_flattened(params):
         q_max=params["q_max"]
     )
 
-    return q_flattened, I_flattened
+    return q_flattened, I_flattened, empirical_var
 
 
 

@@ -104,7 +104,7 @@ simulation_parameters_1 = {
 # "Sample" parameters
     "form_factor_name": "guinier_ff",
     "rg": 2,  # in nm
-    "variance": 0.01,
+    "variance": 0.3,
     "sigma_x": 0.01,  # in pixels
     "sigma_y": 0.01,  # in pixels
     "sample_detector_distance": 1500,  # in mm
@@ -125,7 +125,7 @@ simulation_parameters_2 = {
 # "Sample" parameters
     "form_factor_name": "guinier_ff",
     "rg": 2,  # in nm
-    "variance": 0.01,
+    "variance": 0.3,
     "sigma_x": 2,  # in pixels
     "sigma_y": 2,  # in pixels
     "sample_detector_distance": 1500,  # in mm
@@ -145,8 +145,8 @@ bins_number = 1000
 
 # Creates two sets of 1D flattened I(q) data based on params1 ans params2
 # Returns 4 1D arrays: I1 vs q1 and I2 vs q2
-q1, I1 = analytical_simulation_2d.single_analytical_simulation_flattened(simulation_parameters_1)
-q2, I2 = analytical_simulation_2d.single_analytical_simulation_flattened(simulation_parameters_2)
+q1, I1, empirical_var1 = analytical_simulation_2d.single_analytical_simulation_flattened(simulation_parameters_1)
+q2, I2, empirical_var2 = analytical_simulation_2d.single_analytical_simulation_flattened(simulation_parameters_2)
 
 # Bins the I(q) data sets and finds overlapping regions
 # Returns 3 arrays: binned q (overlap between q1 and q2), binned I1 and binned I2

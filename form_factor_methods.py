@@ -125,35 +125,90 @@ def polyP(x, form_factor, r_values, distribution):
     return integral
 
 
+# def generate_gaussian_distribution(r_mean, r_std, num_points=1000):
+#     """
+#     Generate a Gaussian distribution of radii values and corresponding weights.
+
+#     This function calculates a Gaussian distribution of rg values centered at `r_mean` with a standard deviation of
+#     `r_std`.
+#     The distribution is generated using a linearly spaced array of `num_points` within three standard deviations
+#     from the mean. The weights of the distribution are calculated using the Gaussian function.
+
+#     Parameters:
+#     r_mean (float): The mean of the Gaussian distribution.
+#     r_std (float): The standard deviation of the Gaussian distribution.
+#     num_points (int, optional): The number of points to generate in the distribution. Default is 1000.
+
+#     Returns:
+#     tuple: A tuple containing two numpy arrays: `r_values` and `gaussian_weights`.
+#         - `r_values`: An array of rg values.
+#         - `gaussian_weights`: An array of corresponding weights for each rg value.
+#     """
+#     # Generate the rg value array
+#     r_values = np.linspace(np.max([r_mean - 3 * r_std, 0]), r_mean + 3 * r_std, num_points)
+#     # Generate the corresponding gaussian function
+#     gaussian_weights = gaussian_function(r_values, r_mean, r_std)
+#     return r_values, gaussian_weights
 def generate_gaussian_distribution(r_mean, r_std, num_points=1000):
     """
-    Generate a Gaussian distribution of radii values and corresponding weights.
+    Generate a *discrete* (binned) Gaussian distribution of r values and corresponding weights,
+    normalized so that the sum of weights is 1.
+    
+    This function calculates points from [max(r_mean - 3*r_std, 0), r_mean + 3*r_std] (truncated if below 0),
+    samples the Gaussian PDF at those points, and then converts those PDF samples to
+    discrete probabilities using a simple Riemann-sum approach.
+    
+    Parameters
+    ----------
+    r_mean : float
+        The mean of the desired Gaussian distribution.
+    r_std : float
+        The standard deviation (sigma) of the desired Gaussian distribution.
+    num_points : int, optional
+        The number of points to generate in the distribution. Default is 1000.
 
-    This function calculates a Gaussian distribution of rg values centered at `r_mean` with a standard deviation of
-    `r_std`.
-    The distribution is generated using a linearly spaced array of `num_points` within three standard deviations
-    from the mean. The weights of the distribution are calculated using the Gaussian function.
-
-    Parameters:
-    r_mean (float): The mean of the Gaussian distribution.
-    r_std (float): The standard deviation of the Gaussian distribution.
-    num_points (int, optional): The number of points to generate in the distribution. Default is 1000.
-
-    Returns:
-    tuple: A tuple containing two numpy arrays: `r_values` and `gaussian_weights`.
-        - `r_values`: An array of rg values.
-        - `gaussian_weights`: An array of corresponding weights for each rg value.
+    Returns
+    -------
+    r_values : np.ndarray
+        Array of r (or rg) values (shape = (num_points,)).
+    gauss_weights : np.ndarray
+        Array of *normalized* weights for each r value (shape = (num_points,)),
+        satisfying sum(gauss_weights) = 1.
     """
-    # Generate the rg value array
-    r_values = np.linspace(np.max([r_mean - 3 * r_std, 0]), r_mean + 3 * r_std, num_points)
-    # Generate the corresponding gaussian function
-    gaussian_weights = gaussian_function(r_values, r_mean, r_std)
-    return r_values, gaussian_weights
+    # Define the interval for r
+    # If r_mean < 3*r_std, you will start from 0 (truncation).
+    r_min = max(r_mean - 3*r_std, 0)
+    r_max = r_mean + 3*r_std
+    
+    # Generate the r-values over this interval
+    r_values = np.linspace(r_min, r_max, num_points)
+    
+    # Evaluate the Gaussian PDF at these points
+    pdf_values = gaussian_function(r_values, r_mean, r_std)
+    
+    # Convert PDF values to discrete "weights" by approximating the integral
+    # using a uniform spacing (dx)
+    dx = r_values[1] - r_values[0]
+    # The area under the PDF over each small bin is pdf_values[i] * dx
+    raw_weights = pdf_values * dx
+    
+    # Normalize so that the total sum of weights = 1
+    total_weight = np.sum(raw_weights)
+    gauss_weights = raw_weights / total_weight
+    
+    return r_values, gauss_weights
 
+# def gaussian_function(x, A, B):
+#     exponent = np.exp(-0.5 * ((x - A) / B) ** 2) * (1 / (B * np.sqrt(2 * np.pi)))
+#     return exponent
 
-def gaussian_function(x, A, B):
-    exponent = np.exp(-0.5 * ((x - A) / B) ** 2) * (1 / (B * np.sqrt(2 * np.pi)))
-    return exponent
+def gaussian_function(x, mu, sigma):
+    """
+    Return the value of the Gaussian (normal) PDF with mean mu and
+    standard deviation sigma, evaluated at x.
+    """
+    return (1.0 / (sigma * np.sqrt(2.0 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+
 
 def delta_function_ff(x, rg):
     delta_xrg = 'infinity'
