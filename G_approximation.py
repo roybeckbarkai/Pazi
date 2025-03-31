@@ -369,6 +369,8 @@ def G_fit(q1, I1, q2, I2,
         The model values G_function(q1_masked, *popt) using the fitted parameters.
     G_initial : ndarray
         The model values G_function(q1_masked, rg_initial, f2_initial, var_initial, A_initial).
+     G_g0g1_fit : ndarray
+        Fit a linear line to G vs q^2
 
     Notes
     -----
@@ -402,7 +404,7 @@ def G_fit(q1, I1, q2, I2,
 
     # Compute the log intensity ratio
     logdI = np.log(I1_masked / I2_masked)
-
+    Ag1, Ag0 = np.polyfit((q1_masked) ** 2, logdI, 1)
     # Map form_factor_name to an f2_initial if recognized
     f2_dictionary = {
         'guinier_ff': 0,
@@ -501,7 +503,9 @@ def G_fit(q1, I1, q2, I2,
             "var_fit_error": errors[2],
             "A_fit": popt[3],
             "A_fit_error": errors[3],
-            "Rg_guinier": rg_guinier
+            "Rg_guinier": rg_guinier,
+            "Ag0": Ag0,
+            "Ag1": Ag1
         },
         "covariance": pcov
     }
@@ -509,11 +513,12 @@ def G_fit(q1, I1, q2, I2,
     # Calculate model values for the initial and final parameters
     G_initial = G_function_new(q1_masked, rg_initial, f2_initial, var_initial, A_initial)
     G_final = G_function_new(q1_masked, *popt)
+    G_g0g1_fit = np.polyval([Ag1, 0, Ag0], (q1_masked))
 
     # Return fit dictionary and relevant arrays
-    return fit_results, q1_masked, logdI, G_final, G_initial    
+    return fit_results, q1_masked, logdI, G_final, G_initial, G_g0g1_fit    
 
-def plot_G_function_fits(q1_masked, logdI, G_final, G_initial, fit_results,
+def plot_G_function_fits(q1_masked, logdI, G_final, G_initial, G_g0g1_fit, fit_results,
                          filename1=None, filename2=None):
     """
     Plot data (q1_masked vs. logdI) along with two curves:
@@ -543,7 +548,9 @@ def plot_G_function_fits(q1_masked, logdI, G_final, G_initial, fit_results,
                 "var_fit_error": errors[2],
                 "A_fit": popt[3],
                 "A_fit_error": errors[3],
-                "Rg_guinier": rg_guinier
+                "Rg_guinier": rg_guinier,
+                "Ag0": Ag0,
+                "Ag1": Ag1
             },
             "covariance": pcov
         }
@@ -575,6 +582,8 @@ def plot_G_function_fits(q1_masked, logdI, G_final, G_initial, fit_results,
 
     # Plot the initial guess
     plt.plot(q1_masked**2, G_initial, 'k--', label='Initial parameters')
+    
+    plt.plot(q1_masked**2, G_g0g1_fit, 'g-.', label='Linear fit')
 
     # Label and title
     plt.xlabel('q^2')

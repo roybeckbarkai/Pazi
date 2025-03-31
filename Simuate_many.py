@@ -36,13 +36,14 @@ def main():
     # Define the parameters that you want to vary and their values.
     # For example, vary 'rg' and 'variance'. You can add more keys if needed.
     vary_params = {
-        "rg": [2.0],          # example values for rg (in nm)
+        "rg": [1.0, 2.0, 4.0],          # example values for rg (in nm)
         "variance": [0.01, 0.1, 0.2, 0.3, 0.4, 0.5 , 0.7, 0.8, 1],
-        "sigma_x":[1 , 5]
+        "sigma_x":[1 , 5],
+        "sigma_y":[1, 5]
     }
     
     # Designated folder to save simulation results.
-    save_folder = "simulation_changing_Var_new"
+    save_folder = "simulation_changing_Var_Mar31"
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     

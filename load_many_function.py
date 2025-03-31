@@ -57,9 +57,12 @@ def process_simulation_pairs_and_fit(log_file, results_folder, fitting_parameter
             try:
                 q1, I1 = csv_man.read_q_I_from_csv(filepath1)
                 q2, I2 = csv_man.read_q_I_from_csv(filepath2)
-                fit_results, q1_masked, logdI, G_final, G_initial = G_approx.G_fit(q1, I1, q2, I2, **fitting_parameters)
+                
+                fit_results, q1_masked, logdI, G_final, G_initial, G_g0g1_fit = G_approx.G_fit(q1, I1, q2, I2, **fitting_parameters)
+                
+                
                 if fitting_parameters["plot_fitting_curve"]:
-                    G_approx.plot_G_function_fits (q1_masked, logdI, G_final,G_initial, fit_results, filename1 = filenames[0], filename2=filenames[1])   
+                    G_approx.plot_G_function_fits (q1_masked, logdI, G_final,G_initial, G_g0g1_fit, fit_results, filename1 = filenames[0], filename2=filenames[1])   
             except Exception as e:
                 print(f"Error processing group {group_key}: {e}")
                 continue
@@ -84,9 +87,10 @@ def process_simulation_pairs_and_fit(log_file, results_folder, fitting_parameter
                 try:
                     q1, I1 = csv_man.read_q_I_from_csv(filepath1)
                     q2, I2 = csv_man.read_q_I_from_csv(filepath2)
-                    fit_results, q1_masked, logdI, G_final, G_initial = G_approx.G_fit(q1, I1, q2, I2, **fitting_parameters)
+                    fit_results, q1_masked, logdI, G_final, G_initial, G_g0g1_fit = G_approx.G_fit(q1, I1, q2, I2, **fitting_parameters)
+                   
                     if fitting_parameters["plot_fitting_curve"]:
-                        G_approx.plot_G_function_fits (q1_masked, logdI, G_final,G_initial, fit_results, filename1 = filenames[0], filename2=filenames[1])  
+                        G_approx.plot_G_function_fits (q1_masked, logdI, G_final,G_initial,G_g0g1_fit, fit_results, filename1 = filenames[0], filename2=filenames[1])  
                 except Exception as e:
                     print(f"Error processing group {group_key} for pair {filenames}: {e}")
                     continue
@@ -147,6 +151,9 @@ def save_pairs_results_to_csv(pairs_data, fitting_parameters, output_csv_filenam
             row[key] = fixed.get(key, "")
         row["filename1"] = pair.get("filename1", "")
         row["filename2"] = pair.get("filename2", "")
+        row["Ag0"] = pair.get("Ag0","")
+        row["Ag1"] = pair.get("Ag1","")
+        
         fit_results = pair.get("fit_results")
         if fit_results is not None and "optimal_parameters" in fit_results:
             opt_params = fit_results["optimal_parameters"]
@@ -262,7 +269,7 @@ def run_fitting_ui(log_file, results_folder):
                 sim_f2 = float(fixed.get("f2_initial", 0))
                 fit_opt = pair["fit_results"]["optimal_parameters"]
                 emp_var = float(fixed.get("empirical_var", 0))
-                print ("fit_opt[rg_fit]",fit_opt["rg_fit"])
+                #print ("fit_opt[rg_fit]",fit_opt["rg_fit"])
                 fitted_rg = float(fit_opt.get("rg_fit", np.nan))
                 fitted_var = float(fit_opt.get("var_fit", np.nan))
                 fitted_f2 = float(fit_opt.get("f2_fit", np.nan))
@@ -417,5 +424,5 @@ def load_and_plot_pair (df_pairs, selected_index, fitting_params,results_folder)
     fitting_params["plot_fitting_curve"] = True
 
     # Perform the fit
-    fit_results, q1_masked, logdI, G_final, G_initial  = G_approx.G_fit(q1, I1, q2, I2, **fitting_params)
-    G_approx.plot_G_function_fits(q1_masked,logdI,G_final,G_initial,fit_results,fn1,fn2)
+    fit_results, q1_masked, logdI, G_final, G_initial, G_g0g1_fit  = G_approx.G_fit(q1, I1, q2, I2, **fitting_params)
+    G_approx.plot_G_function_fits(q1_masked,logdI,G_final,G_initial,G_g0g1_fit,fit_results,fn1,fn2)
