@@ -95,7 +95,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     #rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance) * rg)
     rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance))   ### correct to new definiation of Variance in units of Rg^2
     sum_p, sum_p_x, sum_p_x2,emp_var = validate_and_summarize (rg_array,distribution_,rg, variance)
-    
+    emp_Rg= sum_p_x
     # print (f"sum p_i= {sum_p}, sum_p_x={sum_p_x}, and sum_p_x2={sum_p_x2}\n")
     # Get form factor function name for call from form_factor_methods
     ff_function = getattr(form_factor_methods, form_factor_name, None)
@@ -111,7 +111,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     # Gaussian convolution of the 2D array based on the given sigmas
     Convoluted_detector_array = gaussian_filter(detector_array, sigma=[sigma_x, sigma_y])
 
-    return Convoluted_detector_array, emp_var
+    return Convoluted_detector_array, emp_var, emp_Rg
 
 #Flatten and normalize intensity data from 2D arrays to 1D arrays
 '''
@@ -243,7 +243,7 @@ def single_analytical_simulation_flattened(params):
 
     # Runs the analytical calculation of 2D intensity profile
     # Outputs 2D intensity distribution: I_array
-    I_array, empirical_var = analytical_calculate_single_2d(
+    I_array, empirical_var, empirical_Rg = analytical_calculate_single_2d(
         params["form_factor_name"], params["rg"], params["variance"],
         params["sigma_x"], params["sigma_y"], q_table,
         params["px_number"], params["px_size"],
@@ -262,7 +262,7 @@ def single_analytical_simulation_flattened(params):
         q_max=params["q_max"]
     )
 
-    return q_flattened, I_flattened, empirical_var
+    return q_flattened, I_flattened, empirical_var, empirical_Rg
 
 
 

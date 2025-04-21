@@ -36,10 +36,10 @@ def main():
     # Define the parameters that you want to vary and their values.
     # For example, vary 'rg' and 'variance'. You can add more keys if needed.
     vary_params = {
-        "rg": [1.0, 2.0, 4.0],          # example values for rg (in nm)
-        "variance": [0.01, 0.1, 0.2, 0.3, 0.4, 0.5 , 0.7, 0.8, 1],
+        "rg": [1.0, 2.0],          # example values for rg (in nm)
+        "variance": [0.01, 1],
         "sigma_x":[1 , 5],
-        "sigma_y":[1, 5]
+        "sigma_y":[5]
     }
     
     # Designated folder to save simulation results.
@@ -51,12 +51,12 @@ def main():
     log_filename = os.path.join(save_folder, "simulation_log.csv")
     
     # Create a list of keys for the log. 
-    # Include "empirical_var" so we can record the simulation result.
+    # Include "empirical_var" and "empirical_Rg" so we can record the simulation result.
     log_fields = sorted(
         set(
             list(sim_params_default.keys()) 
             + list(vary_params.keys()) 
-            + ["filename", "empirical_var"]
+            + ["filename", "empirical_var", "empirical_Rg"]
         )
     )
     
@@ -75,7 +75,7 @@ def main():
         
         # Run the simulation using your provided simulation function.
         # This function returns q and I - 2D data.
-        q, I, empirical_var = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
+        q, I, empirical_var, empirical_Rg = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
         
         
         if sim_params["binning"]:
@@ -111,6 +111,9 @@ def main():
             elif key == "empirical_var":
                 # Record the computed empirical variance
                 log_entry[key] = empirical_var
+            elif key == "empirical_Rg":
+                # Record the computed empirical Rg
+                log_entry[key] = empirical_Rg    
             elif key in sim_params:
                 log_entry[key] = sim_params[key]
             else:
