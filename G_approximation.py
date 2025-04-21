@@ -20,6 +20,62 @@ def G_function_new(x, Rg, C2, V, A):
       x=q
       Q=(q*Rg)^2  
       g0 = -3* (1 + V)
+      g1  = (1+18*C2+ (126*C2 +10)*V)
+      g2 = -(6*C2+ V*(96*C2+8/3))
+      g3 = 9*C2^2 +(198*C2^2 + 10*C2)*V
+      
+    Parameters
+    ----------
+    x=q : float or numpy.ndarray
+        The radial scattering variable.
+    A : float
+        The prefactor, representing (sigma_x1^2+sigma_y1^2) - (sigma_x2^2+sigma_y2^2).
+    Rg : float
+        The mean radius of gyration (R_0).
+    V : float
+        The variance of the radius of gyration distribution.
+    C2 : float
+        a constant which is the second derivating with respect to Q of the unsmeared form factor
+        
+    Returns
+    -------
+    G : float or numpy.ndarray
+        The computed value of ln(I1(q)/I2(q)).
+    """
+    
+    A = float(A)
+    Rg = float(Rg)
+    V = float(V) / (Rg**2)  # normalization to unit-less value
+    C2 = float(C2)
+       
+    if Rg <= 0:
+        raise ValueError("Rg (mean radius of gyration) must be positive.")
+    if V < 0:
+        raise ValueError("Variance V must be nonnegative.")
+    
+    # Compute Q = q * Rg.
+    Q = (np.array(x, dtype=float) * Rg) ** 2
+    if np.any(Q < 0):
+        raise ValueError("All q values must be nonnegative.")
+    
+    # Compute the coefficients.
+    g0 = -3 * (1 + V)
+    g1 = (1+ 18 *C2+ (126 * C2 + 10) * V)
+    g2 =  -(6 * C2+ V *( 96 * C2 + 8/3))
+    g3 = 9 * (C2**2) + (198* (C2**2) + 10 * C2) * V
+    
+    # Calculate G(q) = A*(g0 + g1*Q + g2*Q^2 + g3*Q^3).
+    G = A * (g0 + g1 * Q + g2 * Q**2 + g3 * Q**3)
+    return G
+
+
+def G_function_old2(x, Rg, C2, V, A):
+    """
+    Compute G(q) = ln(I1(q)/I2(q)) = A*(g0 + g1*Q^2 + g2*Q^4 + g3*Q^6)
+    where the coefficients are defined as follows:
+      x=q
+      Q=(q*Rg)^2  
+      g0 = -3* (1 + V)
       g1  = (1+18*C2+ 6*(9*C2 +1)*V)
       g2 = -(6*C2+ V*(72*C2+4/3))
       g3 = (9/2)*C2+(315*C2^2 + 2C2)*V
