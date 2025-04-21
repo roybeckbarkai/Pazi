@@ -19,7 +19,8 @@ def main():
         "wavelength": 0.154,        # nm
         # Sample parameters:
         "form_factor_name": "guinier_ff",
-        "rg": 2,                   # in nm
+        #"form_factor_name": "ext_guinier_ff",
+        "rg": 4,                   # in nm
         "variance": 0.01,
         "sigma_x": 0.01,           # in pixels
         "sigma_y": 0.01,           # in pixels
@@ -28,7 +29,7 @@ def main():
         "normalization_on": True,
         "return_unique": True,
         "q_min": 0.0001,
-        "q_max": 0.5,
+        "q_max": 0.25,
         "binning": False,
         "bins_number": 1000 
     }
@@ -36,14 +37,14 @@ def main():
     # Define the parameters that you want to vary and their values.
     # For example, vary 'rg' and 'variance'. You can add more keys if needed.
     vary_params = {
-        "rg": [1.0, 2.0, 4.0],          # example values for rg (in nm)
-        "variance": [0.01, 0.1, 0.2, 0.3, 0.4, 0.5 , 0.7, 0.8, 1],
+        "rg": [1, 4 ,6 ],          # example values for rg (in nm)
+        "variance": [0.02,   0.2, 0.6],
         "sigma_x":[1 , 5],
-        "sigma_y":[1, 5]
+        "sigma_y":[1]
     }
     
     # Designated folder to save simulation results.
-    save_folder = "simulation_changing_Var_Mar31"
+    save_folder = "simulation_Emp_mean_apr21"
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     
@@ -56,7 +57,7 @@ def main():
         set(
             list(sim_params_default.keys()) 
             + list(vary_params.keys()) 
-            + ["filename", "empirical_var"]
+            + ["filename", "empirical_var", "empirical_mean"]
         )
     )
     
@@ -75,7 +76,7 @@ def main():
         
         # Run the simulation using your provided simulation function.
         # This function returns q and I - 2D data.
-        q, I, empirical_var = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
+        q, I, empirical_var, empirical_mean = analytical_simulation_2d.single_analytical_simulation_flattened(sim_params)
         
         
         if sim_params["binning"]:
@@ -111,6 +112,9 @@ def main():
             elif key == "empirical_var":
                 # Record the computed empirical variance
                 log_entry[key] = empirical_var
+            elif key == "empirical_mean":
+                # Record the computed empirical mean
+                log_entry[key] = empirical_mean
             elif key in sim_params:
                 log_entry[key] = sim_params[key]
             else:
@@ -120,9 +124,13 @@ def main():
         sim_count += 1
     
     # Write the log file as a CSV.
-    with open(log_filename, mode="w", newline="") as logfile:
+    # Check if the log file already exists.
+    file_exists = os.path.exists(log_filename)
+    with open(log_filename, mode="a", newline="") as logfile:
         writer = csv.DictWriter(logfile, fieldnames=log_fields)
-        writer.writeheader()
+        # Write the header only if the file is being created for the first time.
+        if not file_exists:
+            writer.writeheader()
         for row in log_rows:
             writer.writerow(row)
     
