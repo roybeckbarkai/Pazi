@@ -114,36 +114,35 @@ def validate_and_summarize(x, p, expected_mean, expected_variance, tol=1e-4):
     return sum_p, sum_px, sum_px2, emp_var
 
 # Calculates 2d count array
-def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength, nongaussian):
-    def analytical_calculate_single_2d(form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength, nongaussian):
-        """
-        Calculate the 2D analytical simulation of scattering intensity on a detector.
-        This function computes the scattering intensity on a 2D detector array based on 
-        the provided form factor, radius of gyration (Rg), variance, and other parameters. 
-        It supports both Gaussian and non-Gaussian distributions of Rg.
-        Args:
-            form_factor_name (str): The name of the form factor function to use for intensity calculation.
-            rg (float): The mean radius of gyration (Rg) of the particles.
-            variance (float): The variance of the Rg distribution in units of Rg^2.
-            sigma_x (float): The standard deviation for Gaussian convolution along the x-axis.
-            sigma_y (float): The standard deviation for Gaussian convolution along the y-axis.
-            q_table (numpy.ndarray): A 2D array of q-values corresponding to the detector pixels.
-            px_number (tuple): A tuple (num_x, num_y) specifying the number of pixels in the detector along x and y axes.
-            px_size (float): The size of a single pixel in the detector.
-            sample_detector_distance (float): The distance between the sample and the detector.
-            wavelength (float): The wavelength of the incident beam.
-            nongaussian (bool): If True, use a non-Gaussian distribution for Rg; otherwise, use a Gaussian distribution.
-        Returns:
-            tuple: A tuple containing:
-                - Convoluted_detector_array (numpy.ndarray): The 2D array of scattering intensity after Gaussian convolution.
-                - emp_var (float): The empirical variance of the Rg distribution.
-        Raises:
-            ValueError: If the specified form factor function is not found or is not callable.
-        Notes:
-            - The variance is interpreted as the square of the standard deviation of Rg.
-            - The intensity calculation includes a correction factor for the wavelength-dependent term.
-            - Gaussian convolution is applied to the resulting intensity array to simulate detector resolution.
-        """
+def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength, nongaussian=False):
+    """
+    Calculate the 2D analytical simulation of scattering intensity on a detector.
+    This function computes the scattering intensity on a 2D detector array based on 
+    the provided form factor, radius of gyration (Rg), variance, and other parameters. 
+    It supports both Gaussian and non-Gaussian distributions of Rg.
+    Args:
+        form_factor_name (str): The name of the form factor function to use for intensity calculation.
+        rg (float): The mean radius of gyration (Rg) of the particles.
+        variance (float): The variance of the Rg distribution in units of Rg^2.
+        sigma_x (float): The standard deviation for Gaussian convolution along the x-axis.
+        sigma_y (float): The standard deviation for Gaussian convolution along the y-axis.
+        q_table (numpy.ndarray): A 2D array of q-values corresponding to the detector pixels.
+        px_number (tuple): A tuple (num_x, num_y) specifying the number of pixels in the detector along x and y axes.
+        px_size (float): The size of a single pixel in the detector.
+        sample_detector_distance (float): The distance between the sample and the detector.
+        wavelength (float): The wavelength of the incident beam.
+        nongaussian (bool): If True, use a non-Gaussian distribution for Rg; otherwise, use a Gaussian distribution.
+    Returns:
+        tuple: A tuple containing:
+            - Convoluted_detector_array (numpy.ndarray): The 2D array of scattering intensity after Gaussian convolution.
+            - emp_var (float): The empirical variance of the Rg distribution.
+    Raises:
+        ValueError: If the specified form factor function is not found or is not callable.
+    Notes:
+        - The variance is interpreted as the square of the standard deviation of Rg.
+        - The intensity calculation includes a correction factor for the wavelength-dependent term.
+        - Gaussian convolution is applied to the resulting intensity array to simulate detector resolution.
+    """
     # Initialize the detector array based in pixel number
     detector_array = np.zeros((px_number[0], px_number[1])) #MAKE SIZE_LIKE Q_TABLE
 
@@ -156,7 +155,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     except:
         rg=rg
     sum_p, sum_p_x, sum_p_x2,emp_var = validate_and_summarize (rg_array,distribution_,rg, variance)
-    
+
     # print (f"sum p_i= {sum_p}, sum_p_x={sum_p_x}, and sum_p_x2={sum_p_x2}\n")
     # Get form factor function name for call from form_factor_methods
     ff_function = getattr(form_factor_methods, form_factor_name, None)
