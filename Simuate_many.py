@@ -37,8 +37,8 @@ def main():
     # Define the parameters that you want to vary and their values.
     # For example, vary 'rg' and 'variance'. You can add more keys if needed.
     vary_params = {
-        "rg": [1, 4 ,6 ],          # example values for rg (in nm)
-        "variance": [0.02,   0.2, 0.6],
+        "rg": [3 ],          # example values for rg (in nm)
+        "variance": [0.02,   0.8, 0.6],
         "sigma_x":[1 , 5],
         "sigma_y":[1]
     }
@@ -47,6 +47,20 @@ def main():
     save_folder = "simulation_Emp_mean_apr21"
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
+    
+        # --- Determine the next available simulation index to avoid overwriting ---
+    existing_counts = []
+    sim_prefix = "sim_"
+    for fname in os.listdir(save_folder):
+        if fname.startswith(sim_prefix) and fname.endswith(".csv"):
+            # extract the numeric part right after the prefix
+            count_part = fname[len(sim_prefix):].split("_", 1)[0]
+            try:
+                existing_counts.append(int(count_part))
+            except ValueError:
+                # skip files with unexpected naming
+                pass
+    sim_count = max(existing_counts) + 1 if existing_counts else 0
     
     # Prepare a log file to record simulation parameters and the filename for each simulation.
     log_filename = os.path.join(save_folder, "simulation_log.csv")
@@ -66,7 +80,7 @@ def main():
     vary_keys = list(vary_params.keys())
     vary_values_product = list(itertools.product(*(vary_params[k] for k in vary_keys)))
     
-    sim_count = 0
+    
     for combo in vary_values_product:
         # Start with a copy of the default simulation parameters.
         sim_params = sim_params_default.copy()
@@ -87,19 +101,25 @@ def main():
             q=np.array(q).squeeze()
             I=np.array(I).squeeze()
       
+
+        # Build a unique filename that is guaranteed not to overwrite any
+        # existing file. We increment sim_count until a free name is found.
+        while True:
+            filename = f"sim_{sim_count:03d}"
+            for key in vary_keys:
+                param_val = sim_params[key]
+                if isinstance(param_val, float):
+                    filename += f"_{key}{param_val:.3f}"
+                else:
+                    filename += f"_{key}{param_val}"
+            filename += ".csv"
+            filepath = os.path.join(save_folder, filename)
+            if not os.path.exists(filepath):
+                # Found an unused filename
+                break
+            sim_count += 1  # try the next index
+        # ------------------------------------------------------------------
         
-        
-        # Create a unique filename. Here we use the simulation count and the varied parameters.
-        filename = f"sim_{sim_count:03d}"
-        for key in vary_keys:
-            # Append the parameter name and value (formatted to 3 decimals if float)
-            param_val = sim_params[key]
-            if isinstance(param_val, float):
-                filename += f"_{key}{param_val:.3f}"
-            else:
-                filename += f"_{key}{param_val}"
-        filename += ".csv"
-        filepath = os.path.join(save_folder, filename)
         
         # Save the (q, I) data using your csv_man module.
         csv_man.save_q_I_to_csv(q, I, filepath)
