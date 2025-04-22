@@ -171,7 +171,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     # Gaussian convolution of the 2D array based on the given sigmas
     Convoluted_detector_array = gaussian_filter(detector_array, sigma=[sigma_x, sigma_y])
 
-    return Convoluted_detector_array, emp_var
+    return Convoluted_detector_array, emp_var, sum_p_x
 
 #Flatten and normalize intensity data from 2D arrays to 1D arrays
 '''
@@ -303,7 +303,7 @@ def single_analytical_simulation_flattened(params):
 
     # Runs the analytical calculation of 2D intensity profile
     # Outputs 2D intensity distribution: I_array
-    I_array, empirical_var = analytical_calculate_single_2d(
+    I_array, empirical_var, empirical_mean = analytical_calculate_single_2d(
         params["form_factor_name"], params["rg"], params["variance"],
         params["sigma_x"], params["sigma_y"], q_table,
         params["px_number"], params["px_size"],
@@ -322,7 +322,7 @@ def single_analytical_simulation_flattened(params):
         q_max=params["q_max"]
     )
 
-    return q_flattened, I_flattened, empirical_var
+    return q_flattened, I_flattened, empirical_var, empirical_mean
 
 
 
