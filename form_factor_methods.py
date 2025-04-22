@@ -6,17 +6,55 @@ import math
 
 # FORM FACTORS ARE DEFINED AS FUNCTIONS PROPORTIONAL TO I(q)
 def gaussian_ff(x, Rg):
+    """
+    Calculate the Gaussian chain form factor.
+
+    This function computes the form factor of an ideal Gaussian chain 
+    based on the given scattering vector magnitude (q) and the radius 
+    of gyration (Rg).
+
+    Parameters:
+    x (float or ndarray): The scattering vector magnitude (q).
+    Rg (float): The radius of gyration of the chain.
+
+    Returns:
+    float or ndarray: The form factor of the ideal Gaussian chain.
+
+    Notes:
+    - The form factor is calculated using the formula:
+      fa = (2 * (exp(-qrg) - 1 + qrg)) / (qrg ** 2)
+      where qrg = (q * Rg) ** 2.
+    - Ensure that qrg is not zero to avoid division by zero.
+    """
     # Gaussian chain form factor. From given x (q) and Rg the function returns the form factor of an ideal chain
     qrg = (x * Rg) ** 2
+    qrg[qrg == 0] = 1e-13  # Avoid division by zero
     fa = (2 * (np.exp(-qrg) - 1 + qrg)) / (qrg ** 2)
     return fa
 
 
 def debye(qrg):
+    qrg[qrg == 0] = 1e-13  # Avoid division by zero
     return (1 - np.exp(-qrg ** 2)) / (qrg ** 2)
 
 
 def stable_gaussian_ff(x, Rg):
+    """
+    Computes the stable Gaussian chain form factor with a modification for small q values.
+
+    This function calculates the form factor for a Gaussian chain, applying a correction
+    for small values of q to ensure numerical stability.
+
+    Parameters:
+    x : array-like
+        The scattering vector magnitude (q) values.
+    Rg : float
+        The radius of gyration of the Gaussian chain.
+
+    Returns:
+    numpy.ndarray
+        The computed form factor values for the given q and Rg.
+    """
     # Gaussian chain form factor with modification for small q
     qrg = (x * Rg)
     fa = np.where(qrg > 1e-5, debye(qrg) ** 2, np.exp(1 - qrg ** 2 / 3))
@@ -27,6 +65,33 @@ def guinier_ff(x, Rg):
     # Guinier form factor
     return np.exp(-(x * Rg) ** 2 / 3)
 
+def ext_guinier_ff(x, Rg):
+    """
+    Calculate the Extended Guinier form factor.
+
+    The Extended Guinier approximation is used to describe the scattering 
+    intensity of particles in small-angle scattering experiments. It extends 
+    the basic Guinier approximation by including a higher-order term.
+
+    Parameters:
+    x : float or numpy.ndarray
+        The scattering vector magnitude (q) or an array of q values.
+    Rg : float
+        The radius of gyration of the particle.
+
+    Returns:
+    float or numpy.ndarray
+        The calculated form factor value(s) for the given q and Rg.
+
+    Notes:
+    - The parameter `nu` represents the second derivative 
+      of the logarithm of the form factor at q=0 with respect to (q * Rg)^2.
+    - The formula used is:
+      F(q) = exp(-(q * Rg)^2 / 3 + nu * (q * Rg)^4)
+    """
+    # Extended Guinier form factor
+    nu=-1/63 # nu is the second derivative of the log of the form factor at q=0 with respect to (q*r_g)^2
+    return np.exp(-(x * Rg) ** 2 / 3+nu*(x * Rg) ** 4 )
 
 def _fa_sphere(qr):
     # Scattering amplitude of a sphere, from given qr (q * R), where R is the sphere radius
@@ -185,6 +250,55 @@ def generate_gaussian_distribution(r_mean, r_std, num_points=1000):
     
     # Evaluate the Gaussian PDF at these points
     pdf_values = gaussian_function(r_values, r_mean, r_std)
+    
+    # Convert PDF values to discrete "weights" by approximating the integral
+    # using a uniform spacing (dx)
+    dx = r_values[1] - r_values[0]
+    # The area under the PDF over each small bin is pdf_values[i] * dx
+    raw_weights = pdf_values * dx
+    
+    # Normalize so that the total sum of weights = 1
+    total_weight = np.sum(raw_weights)
+    gauss_weights = raw_weights / total_weight
+    
+    return r_values, gauss_weights
+
+def generate_nongaussian_distribution(r_mean, r_std, num_points=1000):
+    """
+    Generate a nonGaussian distribution of r values and corresponding weights,
+    normalized so that the sum of weights is 1.
+    
+    This function calculates points from [max(r_mean - 3*r_std, 0), r_mean + 3*r_std] (truncated if below 0),
+    samples the Gaussian PDF at those points, and then converts those PDF samples to
+    discrete probabilities using a simple Riemann-sum approach.
+    
+    Parameters
+    ----------
+    r_mean : float
+        The mean of the desired Gaussian distribution.
+    r_std : float
+        The standard deviation (sigma) of the desired Gaussian distribution.
+    num_points : int, optional
+        The number of points to generate in the distribution. Default is 1000.
+
+    Returns
+    -------
+    r_values : np.ndarray
+        Array of r (or rg) values (shape = (num_points,)).
+    gauss_weights : np.ndarray
+        Array of *normalized* weights for each r value (shape = (num_points,)),
+        satisfying sum(gauss_weights) = 1.
+    """
+    # Define the interval for r
+    # If r_mean < 3*r_std, you will start from 0 (truncation).
+    r_min = max(r_mean - r_std, 0)
+    r_max = r_mean + r_std
+    
+    # Generate the r-values over this interval
+    r_values = np.linspace(r_min, r_max, 2)
+    
+    # Evaluate the Gaussian PDF at these points
+    pdf_values = np.float64([1.0, 1.0])
     
     # Convert PDF values to discrete "weights" by approximating the integral
     # using a uniform spacing (dx)

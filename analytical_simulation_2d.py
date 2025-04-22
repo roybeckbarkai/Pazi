@@ -9,6 +9,33 @@ import matplotlib.pyplot as plt
  
 # Creates q 2d array based on simulation parameters
 def create_q_table(px_number, px_size, sample_detector_distance, wavelength, beam_center: Optional[float]=[0,0]):
+    """
+    Creates a q-table for a 2D detector setup, which is used in analytical simulations.
+
+    Parameters:
+        px_number (tuple): A tuple representing the number of pixels in the detector 
+                           along the x and y axes (e.g., (nx, ny)).
+        px_size (float): The size of a single pixel in the detector (in the same units as 
+                         sample_detector_distance).
+        sample_detector_distance (float): The distance between the sample and the detector 
+                                          (in the same units as px_size).
+        wavelength (float): The wavelength of the incident beam (in the same units as px_size).
+        beam_center (Optional[list[float]]): A list containing the x and y coordinates of the 
+                                             beam center in pixel units. If not provided, 
+                                             defaults to the center of the detector.
+
+    Returns:
+        numpy.ndarray: A 2D array representing the q-table, where each element corresponds 
+                       to the q-value at a specific pixel in the detector.
+
+    Notes:
+        - The q-value is calculated using the formula:
+          q = (4 * π * sin(θ)) / wavelength
+          where θ is the scattering angle derived from the pixel position, beam center, 
+          and sample-detector distance.
+        - If the beam center is not explicitly provided, it is assumed to be at the center 
+          of the detector.
+    """
     # Generate xy_table and calculate qtable (these values do not change across iterations)
     # If beam center not defined
     beam_center = [px_number[0] / 2, px_number[1] / 2]  # px
@@ -87,15 +114,48 @@ def validate_and_summarize(x, p, expected_mean, expected_variance, tol=1e-4):
     return sum_p, sum_px, sum_px2, emp_var
 
 # Calculates 2d count array
-def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength):
+def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sigma_y, q_table, px_number, px_size, sample_detector_distance, wavelength, nongaussian=False):
+    """
+    Calculate the 2D analytical simulation of scattering intensity on a detector.
+    This function computes the scattering intensity on a 2D detector array based on 
+    the provided form factor, radius of gyration (Rg), variance, and other parameters. 
+    It supports both Gaussian and non-Gaussian distributions of Rg.
+    Args:
+        form_factor_name (str): The name of the form factor function to use for intensity calculation.
+        rg (float): The mean radius of gyration (Rg) of the particles.
+        variance (float): The variance of the Rg distribution in units of Rg^2.
+        sigma_x (float): The standard deviation for Gaussian convolution along the x-axis.
+        sigma_y (float): The standard deviation for Gaussian convolution along the y-axis.
+        q_table (numpy.ndarray): A 2D array of q-values corresponding to the detector pixels.
+        px_number (tuple): A tuple (num_x, num_y) specifying the number of pixels in the detector along x and y axes.
+        px_size (float): The size of a single pixel in the detector.
+        sample_detector_distance (float): The distance between the sample and the detector.
+        wavelength (float): The wavelength of the incident beam.
+        nongaussian (bool): If True, use a non-Gaussian distribution for Rg; otherwise, use a Gaussian distribution.
+    Returns:
+        tuple: A tuple containing:
+            - Convoluted_detector_array (numpy.ndarray): The 2D array of scattering intensity after Gaussian convolution.
+            - emp_var (float): The empirical variance of the Rg distribution.
+    Raises:
+        ValueError: If the specified form factor function is not found or is not callable.
+    Notes:
+        - The variance is interpreted as the square of the standard deviation of Rg.
+        - The intensity calculation includes a correction factor for the wavelength-dependent term.
+        - Gaussian convolution is applied to the resulting intensity array to simulate detector resolution.
+    """
     # Initialize the detector array based in pixel number
     detector_array = np.zeros((px_number[0], px_number[1])) #MAKE SIZE_LIKE Q_TABLE
 
     # Generate the distribution of Rgs
     #rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance) * rg)
     rg_array, distribution_ = form_factor_methods.generate_gaussian_distribution(rg, np.sqrt(variance))   ### correct to new definiation of Variance in units of Rg^2
+    try: 
+        if nongaussian:
+            rg_array, distribution_ = form_factor_methods.generate_nongaussian_distribution(rg, np.sqrt(variance))   ### correct to new definiation of Variance in units of Rg^2
+    except:
+        rg=rg
     sum_p, sum_p_x, sum_p_x2,emp_var = validate_and_summarize (rg_array,distribution_,rg, variance)
-    emp_Rg= sum_p_x
+    
     # print (f"sum p_i= {sum_p}, sum_p_x={sum_p_x}, and sum_p_x2={sum_p_x2}\n")
     # Get form factor function name for call from form_factor_methods
     ff_function = getattr(form_factor_methods, form_factor_name, None)
@@ -111,7 +171,7 @@ def analytical_calculate_single_2d (form_factor_name, rg, variance, sigma_x, sig
     # Gaussian convolution of the 2D array based on the given sigmas
     Convoluted_detector_array = gaussian_filter(detector_array, sigma=[sigma_x, sigma_y])
 
-    return Convoluted_detector_array, emp_var, emp_Rg
+    return Convoluted_detector_array, emp_var
 
 #Flatten and normalize intensity data from 2D arrays to 1D arrays
 '''
@@ -243,11 +303,11 @@ def single_analytical_simulation_flattened(params):
 
     # Runs the analytical calculation of 2D intensity profile
     # Outputs 2D intensity distribution: I_array
-    I_array, empirical_var, empirical_Rg = analytical_calculate_single_2d(
+    I_array, empirical_var = analytical_calculate_single_2d(
         params["form_factor_name"], params["rg"], params["variance"],
         params["sigma_x"], params["sigma_y"], q_table,
         params["px_number"], params["px_size"],
-        params["sample_detector_distance"], params["wavelength"]
+        params["sample_detector_distance"], params["wavelength"], 0   #nongaussian
     )
 
     # Flattens the data -- creates .dat file with 1D Intensity vs q
@@ -262,7 +322,7 @@ def single_analytical_simulation_flattened(params):
         q_max=params["q_max"]
     )
 
-    return q_flattened, I_flattened, empirical_var, empirical_Rg
+    return q_flattened, I_flattened, empirical_var
 
 
 
