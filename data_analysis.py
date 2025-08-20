@@ -3,30 +3,18 @@ from typing import Tuple, List
 
 
 def initial_processing(
-    I1: np.ndarray,
-    I2: np.ndarray,
-    chi: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
+    I1,
+    I2,
+    chi
+):
     """
     Compute the log-intensity difference and cosine double-angle map,
     with intensity clamped to avoid log of zero or infinities.
-
-    Parameters
-    ----------
-    I1 : (M,N) array
-        Intensity map I1.
-    I2 : (M,N) array
-        Intensity map I2 (e.g., convolved I1).
-    chi : (M,N) array
-        Angle map in radians.
-
-    Returns
-    -------
-    ln_delta_I : (M,N) array
-        ln(I1) - ln(I2), with regions of no-signal forced to 0.
-    cos_2_chi : (M,N) array
-        cos(2*chi).
     """
+    # I1 : numpy array -> Intensity map I1
+    # I2 : numpy array -> Intensity map I2 (e.g., convolved I1)
+    # chi : numpy array -> Angle map in radians
+
     eps = 1e-10
     I1_safe = np.clip(I1, eps, None)
     I2_safe = np.clip(I2, eps, None)
@@ -43,30 +31,21 @@ def initial_processing(
 
 
 def get_M_and_G(
-    I1: np.ndarray,
-    I2: np.ndarray,
-    q: np.ndarray,
-    chi: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    I1,
+    I2,
+    q,
+    chi
+):
     """
     Compute M(q) and G(q) for each unique q using a physics-inspired approach:
       - G(q) = mean of ln_delta_I at that q
       - M(q) = slope of residuals vs cos(2chi) through the origin
-
-    Parameters
-    ----------
-    I1, I2, q, chi : (M,N) arrays
-        Intensity maps, radial q, and angle chi.
-
-    Returns
-    -------
-    M_values : (K,) array
-        Slope coefficients M for each unique q.
-    G_values : (K,) array
-        Intercept values G for each unique q.
-    q_values : (K,) array
-        Sorted unique q values.
     """
+    # I1 : numpy array -> Intensity map I1
+    # I2 : numpy array -> Intensity map I2
+    # q  : numpy array -> Radial q
+    # chi: numpy array -> Angle chi
+
     ln_delta_I, cos_2_chi = initial_processing(I1, I2, chi)
     q_values = np.unique(q)
     K = q_values.size
@@ -93,21 +72,21 @@ def get_M_and_G(
 
 
 def get_m_and_g_constants(
-    I1: np.ndarray,
-    I2: np.ndarray,
-    q: np.ndarray,
-    chi: np.ndarray
-) -> Tuple[float, float, float, float]:
+    I1,
+    I2,
+    q,
+    chi
+):
     """
     Fit polynomial constants for G(q) and M(q):
       G(q) = g0 + g1*q^2 + g2*q^4 + g3*q^6
       M(q) = m1*q^2 + m2*q^4 + m3*q^6
-
-    Returns
-    -------
-    g0, g1, m1, m2 : float
-        Polynomial coefficients of interest.
     """
+    # I1 : numpy array -> Intensity map I1
+    # I2 : numpy array -> Intensity map I2
+    # q  : numpy array -> Radial q
+    # chi: numpy array -> Angle chi
+
     M_values, G_values, q_values = get_M_and_G(I1, I2, q, chi)
     t = q_values**2
     coeffs_g = np.polyfit(t, G_values, 3)
@@ -118,37 +97,31 @@ def get_m_and_g_constants(
 
 
 def get_V_and_phi_tagtag(
-    I1: np.ndarray,
-    I2: np.ndarray,
-    q: np.ndarray,
-    chi: np.ndarray,
-    r_g: float
-) -> List[Tuple[float, float]]:
+    I1,
+    I2,
+    q,
+    chi,
+    r_g_mod
+):
     """
     Analytically solve for possible (V, phi_tagtag) roots based on dimensionless ratios.
-
-    Parameters
-    ----------
-    I1, I2, q, chi : (M,N) arrays
-        Intensity and geometry data.
-    r_g : float
-        Radius of gyration.
-
-    Returns
-    -------
-    solutions : list of (V, phi_tagtag) tuples
-        All real, positive solutions satisfying the derived equations.
     """
+    # I1      : numpy array -> Intensity map I1
+    # I2      : numpy array -> Intensity map I2
+    # q       : numpy array -> Radial q
+    # chi     : numpy array -> Angle chi
+    # r_g_mod : float       -> Radius of gyration (modified)
+
     # Validate inputs
     if I1.shape != I2.shape or I1.shape != q.shape or I1.shape != chi.shape:
         raise ValueError("I1, I2, q, and chi must have the same shape.")
-    if r_g <= 0:
-        raise ValueError("r_g must be positive.")
+    if r_g_mod <= 0:
+        raise ValueError("r_g_mod must be positive.")
 
     # Compute coefficients
     g0, g1, m1, m2 = get_m_and_g_constants(I1, I2, q, chi)
-    c_m = (m2 / m1) * (r_g ** 2)
-    c_g = (g1 / g0) * (r_g ** 2)
+    c_m = (m2 / m1) * (r_g_mod ** 2)
+    c_g = (g1 / g0) * (r_g_mod ** 2)
 
     # Quadratic for phi_tagtag: A*phi^2 + B*phi + C = 0
     A = 1404
