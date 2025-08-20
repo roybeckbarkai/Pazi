@@ -1,6 +1,4 @@
 import numpy as np
-from typing import Tuple, List
-
 
 def initial_processing(
     I1,
@@ -8,23 +6,15 @@ def initial_processing(
     chi
 ):
     """
-    Compute the log-intensity difference and cosine double-angle map,
-    with intensity clamped to avoid log of zero or infinities.
+    Compute the log-intensity difference and cosine double-angle map.
     """
     # I1 : numpy array -> Intensity map I1
     # I2 : numpy array -> Intensity map I2 (e.g., convolved I1)
-    # chi : numpy array -> Angle map in radians
+    # chi: numpy array -> Angle map in radians
 
-    eps = 1e-10
-    I1_safe = np.clip(I1, eps, None)
-    I2_safe = np.clip(I2, eps, None)
-
-    ln_I1 = np.log(I1_safe)
-    ln_I2 = np.log(I2_safe)
+    ln_I1 = np.log(I1)
+    ln_I2 = np.log(I2)
     ln_delta_I = ln_I1 - ln_I2
-
-    both_floor = (I1_safe == eps) & (I2_safe == eps)
-    ln_delta_I[both_floor] = 0.0
 
     cos_2_chi = np.cos(2 * chi)
     return ln_delta_I, cos_2_chi
