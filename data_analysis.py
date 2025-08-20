@@ -27,38 +27,33 @@ def get_M_and_G(
     chi
 ):
     """
-    Compute M(q) and G(q) for each unique q using a physics-inspired approach:
-      - G(q) = mean of ln_delta_I at that q
-      - M(q) = slope of residuals vs cos(2chi) through the origin
+    Compute global M and G using all samples (no q-binning):
+      - G = mean of ln_delta_I over all samples
+      - M = slope (through origin) of residuals vs cos(2chi) over all samples
     """
     # I1 : numpy array -> Intensity map I1
     # I2 : numpy array -> Intensity map I2
-    # q  : numpy array -> Radial q
+    # q  : numpy array -> Radial q (unused for binning here; kept for interface)
     # chi: numpy array -> Angle chi
 
     ln_delta_I, cos_2_chi = initial_processing(I1, I2, chi)
-    q_values = np.unique(q)
-    K = q_values.size
-    M_values = np.zeros(K)
-    G_values = np.zeros(K)
 
-    for idx, q_i in enumerate(q_values):
-        mask = (q == q_i)
-        y = ln_delta_I[mask]
-        x = cos_2_chi[mask]
-        valid = ~np.isnan(y)
-        y = y[valid]
-        x = x[valid]
+    # Flatten and drop NaNs
+    y = ln_delta_I.ravel()
+    x = cos_2_chi.ravel()
+    valid = ~np.isnan(y) & ~np.isnan(x)
+    y = y[valid]
+    x = x[valid]
 
-        G_i = np.nanmean(y)
-        num = np.sum(x * (y - G_i))
-        den = np.sum(x**2)
-        M_i = num / den if den != 0 else np.nan
+    # G: mean of ln(I1) - ln(I2)
+    G = np.nanmean(y)
 
-        G_values[idx] = G_i
-        M_values[idx] = M_i
+    # M: slope through origin of (y - G) vs x
+    y_res = y - G
+    den = np.sum(x**2)
+    M = np.sum(x * y_res) / den if den != 0 else np.nan
 
-    return M_values, G_values, q_values
+    return M, G
 
 
 def get_m_and_g_constants(
