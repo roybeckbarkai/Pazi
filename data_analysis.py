@@ -2,8 +2,6 @@ import numpy as np
 from find_V_and_phi_tag_tag import V_fun, phi_tag_tag_fun
 from blur_func import gaussian_blur2d
 
-# ---------------------- Pipeline ----------------------
-
 def initial_processing(
     I1,
     chi,

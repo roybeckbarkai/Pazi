@@ -1,5 +1,7 @@
 import numpy as np
 
+# in this helper file we build the polinoms that allow us to find V and phi'' in the final steps of the algorithm
+
 def V_fun(m_coeff, g_coeff):
     """
     Args:
