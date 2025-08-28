@@ -6,7 +6,7 @@ from blur_func import gaussian_blur2d
 # our code uses three function, initial processing, where we get the data ready for analysis and make sure we got the
 # correct format of data.
 # get m anf g constant, where we get values of an initial fit of the data.
-# and get v and phi tag tag, where we use the initial fit to get the necessary data.
+# and get v and phi_tag_tag, where we use the initial fit to get the necessary data.
 
 def initial_processing(
     I1,
