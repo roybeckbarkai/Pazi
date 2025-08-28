@@ -2,13 +2,23 @@ import numpy as np
 
 def V_fun(m_coeff, g_coeff):
     """
-    Compute V lookup from (m_coeff, g_coeff) using embedded polynomial coefficients.
+    Args:
+        m_coeff: a scalar number (as derived from data analysis). assumed numpy.float
+        g_coeff: a scalar number (as derived from data analysis). assumed numpy.float
+
+    Returns: V: a scalar number (as derived from data analysis). assumed numpy.float
+    """
+
+    """
+    Compute V from (m_coeff, g_coeff) using embedded polynomial coefficients.
     Supports scalar, list, or NumPy array inputs.
     """
-    # m_coeff : scalar/array -> c_m
-    # g_coeff : scalar/array -> c_g
+    # m_coeff : scalar/array -> c_m as found in data analysis
+    # g_coeff : scalar/array -> c_g as found in data analysis
     m_coeff = np.asarray(m_coeff)
     g_coeff = np.asarray(g_coeff)
+
+    # VCOEFF : numpy 1d array, containing all the polynomial coefficients used to find V
 
     VCOEFF = np.array([
         -0.0912,  # constant
@@ -20,6 +30,8 @@ def V_fun(m_coeff, g_coeff):
         3.7108,   # m^2*g
         -2.7926   # m*g^2
     ])
+
+    # we plug in the return the coefficient and powers of the polynomial, returning V immediately.
 
     return (
         VCOEFF[0]
@@ -35,13 +47,23 @@ def V_fun(m_coeff, g_coeff):
 
 def phi_tag_tag_fun(m_coeff, g_coeff):
     """
+     Args:
+         m_coeff: a scalar number (as derived from data analysis). assumed numpy.float
+         g_coeff: a scalar number (as derived from data analysis). assumed numpy.float
+
+     Returns: phi_tag_tag: a scalar number (as derived from data analysis). assumed numpy.float
+     """
+
+    """
     Compute phi_tagtag lookup from (m_coeff, g_coeff) using embedded polynomial coefficients.
     Supports scalar, list, or NumPy array inputs.
     """
-    # m_coeff : scalar/array -> c_m
-    # g_coeff : scalar/array -> c_g
+    # m_coeff : scalar/array -> c_m as found in data analysis
+    # g_coeff : scalar/array -> c_g as found in data analysis
     m_coeff = np.asarray(m_coeff)
     g_coeff = np.asarray(g_coeff)
+
+    # NCOEFF : numpy 1d array, containing all the polynomial coefficients used to find phi_tag_tag
 
     NCOEFF = np.array([
         0.0421,   # constant
@@ -53,6 +75,8 @@ def phi_tag_tag_fun(m_coeff, g_coeff):
         0.2701,   # m^2*g
         -0.2889   # m*g^2
     ])
+
+    # we plug in the return the coefficient and powers of the polynomial, returning phi_tag_tag immediately.
 
     return (
         NCOEFF[0]
