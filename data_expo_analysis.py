@@ -6,6 +6,26 @@ from data_analysis import get_m_and_g_constants  # used only to build p0 for the
 from find_V_and_phi_tag_tag import V_fun, phi_tag_tag_fun
 from guinier_approximation import estimate_Rg
 
+
+def polar_transform(
+        q_x,
+        q_y
+):
+    """
+
+    Args:
+        q_x: a numpy 2D array of x value of q in SAXS mesurment
+        q_y: a numpy 2D array of y value of q in SAXS mesurment
+
+    Returns:
+        q: a numpy 2D array of the MAGNITUDE of each q value in the SAXS image
+        chi: a numpy 2D array of the angle of each q value in the SAXS image
+    """
+    q = np.sqrt(q_x ^ 2 + q_y ^ 2)
+    chi = np.atan2(q_y, q_x)
+    return q, chi
+
+
 def initial_processing_expo(
     I1,
     chi,
@@ -148,8 +168,8 @@ def get_m_and_g_constants_expo(
 
 def get_V_and_phi_tagtag(
     I1,
-    q,
-    chi,
+    q_x,
+    q_y,
     q_min,
     q_max,
     *,
@@ -160,8 +180,8 @@ def get_V_and_phi_tagtag(
     """
     Args:
         I1: a numpy 2D array of intensity in a SAXS image
-        q: a numpy 2D array of the MAGNITUDE of each q value in the SAXS image
-        chi: a numpy 2D array of the angle of each q value in the SAXS image
+        q_x: a numpy 2D array of the of each q_x value in the SAXS image
+        q_y: a numpy 2D array of the of each q_y value in the SAXS image
         q_min: minimal q value of a Guinier approximation
         q_max: maximal q value of a Guinier approximation
 
@@ -188,6 +208,10 @@ def get_V_and_phi_tagtag(
     Returns:
       [(V, phi_tag_tag)]
     """
+
+    # move to polar coordinates
+    q, chi = polar_transform(q_x, q_y)
+
     # using Guininer aprproximation get r_g_sq_mod - the Rg value with the varience
     # we first flatten our q and I values into 1D.
     """r_g_sq_mod: a numpy float, the value of Rg^2(1+V) which is derived from guinner analysis of the data."""
