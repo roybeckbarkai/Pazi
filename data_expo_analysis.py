@@ -4,7 +4,7 @@ from scipy.optimize import curve_fit
 from blur_func import gaussian_blur2d
 from data_analysis import get_m_and_g_constants  # used only to build p0 for the nonlinear fit
 from find_V_and_phi_tag_tag import V_fun, phi_tag_tag_fun
-
+from guinier_approximation import estimate_Rg
 
 def initial_processing_expo(
     I1,
@@ -150,8 +150,9 @@ def get_V_and_phi_tagtag(
     I1,
     q,
     chi,
+    q_min,
+    q_max,
     *,
-    r_g_sq_mod,
     I2=None,
     sigma=None,
     max_nfev=10
@@ -161,6 +162,8 @@ def get_V_and_phi_tagtag(
         I1: a numpy 2D array of intensity in a SAXS image
         q: a numpy 2D array of the MAGNITUDE of each q value in the SAXS image
         chi: a numpy 2D array of the angle of each q value in the SAXS image
+        q_min: minimal q value of a Guinier approximation
+        q_max: maximal q value of a Guinier approximation
 
         * and we need one of two extra parameters
         I2: a numpy 2D array of a second intensity mesurment in a SAXS image with diffrent anisotropy parameters
@@ -170,7 +173,8 @@ def get_V_and_phi_tagtag(
         max_nfev, an int, the number of iterations we allow curve_fit to run at most.
 
     Returns:
-        values: a list of two value, V and phi_tag_tag
+        values: a list of three value: Rg, V and phi_tag_tag
+
     """
     """
     Wrapper for the exponential (ratio-space) path:
@@ -184,6 +188,13 @@ def get_V_and_phi_tagtag(
     Returns:
       [(V, phi_tag_tag)]
     """
+    # using Guininer aprproximation get r_g_sq_mod - the Rg value with the varience
+    # we first flatten our q and I values into 1D.
+    """r_g_sq_mod: a numpy float, the value of Rg^2(1+V) which is derived from guinner analysis of the data."""
+    flat_q = q.flatten()
+    flat_I1 = I1.flatten()
+    r_g_sq_mod = estimate_Rg(flat_q, flat_I1, q_min, q_max) ^ 2
+
     # raise rlevant errors
     if r_g_sq_mod <= 0:
         raise ValueError("r_g_sq_mod must be positive.")
@@ -197,5 +208,10 @@ def get_V_and_phi_tagtag(
     c_m = m2 / (m1 * r_g_sq_mod)
     # derive V and phi_tag_tag using the helper polynomial fit we wrote.
     V = V_fun(c_m, c_g)
-    phi = phi_tag_tag_fun(c_m, c_g)
-    return [(float(V), float(phi))]
+    # raise rlevant error
+    if V <= 0:
+        raise ValueError("V came out negative.")
+    phi_tag_tag = phi_tag_tag_fun(c_m, c_g)
+    r_g = np.sqrt(r_g_sq_mod / (1 + V))
+
+    return [(float(r_g), float(V), float(phi_tag_tag))]
