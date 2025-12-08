@@ -22,3 +22,8 @@ def gaussian(x, mean=0, std=1):
     pdf = np.exp(-(x - mean) ** 2 / (2 * std ** 2))
     pdf /= pdf.sum()  # normalize so that sum(pdf) == 1
     return pdf
+
+
+def Boltzmann_dis(r, sigma, mean=1):
+    pdf = (1 / (np.sqrt(2) * sigma)) * np.exp(-((np.sqrt(2) * np.abs(r - mean)) / sigma))
+    return pdf

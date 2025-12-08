@@ -9,7 +9,7 @@ qx, qy, I = Scatter2D(rg=1,
                       distance_to_detector=150,
                       wavelength=0.15,
                       detector_length=7.0,
-                      smearing_kernel_PSF=None,
+                      smearing_kernel_PSF=[[1, 0], [0, 1]],
                       amount_of_radii_fractions=11,
                       radii_fraction_difference=0.08,
                       distribution_function=normalised_gaussian)
