@@ -354,12 +354,12 @@ def Scatter2D(
     rg, phi_tag_tag, photon_noise_count, pixel_count_along_detector, \
         distance_to_detector, wavelength, detector_length, smearing_kernel_PSF, \
         amount_of_radii_fractions, radii_fraction_difference, distribution_function = validate_scatter_parameters(
-        rg, phi_tag_tag, photon_noise_count,
-        pixel_count_along_detector, distance_to_detector,
-        wavelength, detector_length, smearing_kernel_PSF,
-        amount_of_radii_fractions, radii_fraction_difference,
-        distribution_function
-    )
+            rg, phi_tag_tag, photon_noise_count,
+            pixel_count_along_detector, distance_to_detector,
+            wavelength, detector_length, smearing_kernel_PSF,
+            amount_of_radii_fractions, radii_fraction_difference,
+            distribution_function
+            )
 
     # 2. Build q-grid
     qx, qy = create_q_grid(pixel_count_along_detector, detector_length, distance_to_detector, wavelength)
