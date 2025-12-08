@@ -229,3 +229,215 @@ def Scatter2D(
         F = F + Nois * np.random.randn(*F.shape)
 
     return qvx, qvy, F
+
+
+"""NEW FORM"""
+
+import numpy as np
+from scipy.signal import convolve2d
+
+
+# ============================================================
+# ================ 1. WARNINGS & VALIDATION  ==================
+# ============================================================
+
+def validate_scatter_parameters(
+        rg,
+        variance,
+        phi_tag_tag,
+        photon_noise_count,
+        pixel_amount_detector,
+        distance_to_detector,
+        wavelength,
+        detector_size,
+        psf_kernel
+):
+    """
+    Validate and sanitize all input parameters.
+    (Range checks, type checks, physical constraints, etc.)
+    """
+    pass
+
+
+# ============================================================
+# =================== 2. CREATE q-GRID ========================
+# ============================================================
+
+def create_q_grid(
+        pixel_count_along_detector,
+        detector_length,
+        distance_to_detector,
+        wavelength
+):
+    """
+    Create qx, qy grids for a square detector.
+
+    Parameters
+    ----------
+    pixel_count_along_detector : int
+        Number of pixels along one dimension of the detector (NxN).
+    detector_length : float
+        Physical size of the detector (cm).
+    distance_to_detector : float
+        Sample-to-detector distance (cm).
+    wavelength : float
+        X-ray wavelength (nm).
+
+    Returns
+    -------
+    qx, qy : 2D numpy arrays
+        qx and qy grids of shape (N, N).
+    """
+
+    pixel_length = detector_length / pixel_count_along_detector
+
+    # real-space detector coordinates (cm)
+    # 1. Create pixel indices: 0, 1, 2, ..., N-1
+    indices = np.arange(pixel_count_along_detector)
+
+    # 2. Compute the center index (works for even or odd N)
+    center_index = (pixel_count_along_detector - 1) / 2
+
+    # 3. Shift indices so the detector is centered around zero
+    #    e.g. [-2, -1, 0, 1, 2] for N=5
+    centered_indices = indices - center_index
+
+    # 4. Convert index units → physical length units (cm)
+    #    Each pixel corresponds to a physical width pixel_length
+    x = centered_indices * pixel_length
+
+    # 5. Move from 1D → 2D
+    X, Y = np.meshgrid(x, x)
+
+    # 6. Conversion from detector coordinates → q
+    #    Small-angle approx: q = (4π/λ) * (r / 2D)
+    conversion = (4 * np.pi / wavelength) * (1 / (2 * distance_to_detector))
+    qx = conversion * X
+    qy = conversion * Y
+
+    return qx, qy
+
+
+# ============================================================
+# =================== 3. GENERAL FORM FACTOR =================
+# ============================================================
+
+def general_form_factor(value, phi_tag_tag):
+    """
+    General monolithic form factor:
+    f(value) = exp(-value^2 / 3 + 0.5 * φ'' * value^4)
+
+    Parameters
+    ----------
+    value : float or array-like
+        The variable over which the form factor is evaluated (q, q^2, etc.).
+    phi_tag_tag : float
+        Scattering parameter controlling higher-order term.
+
+    Returns
+    -------
+    ff : float or array-like
+        Form factor evaluated at the input value.
+    """
+    ff = np.exp(-value ** 2 / 3 + 0.5 * phi_tag_tag * value ** 4)
+    return ff
+
+
+# ============================================================
+# =================== 4. RADIUS DISTRIBUTION ==================
+# ============================================================
+
+def radius_distribution_model(distribution_function, variance):
+    """
+    Return (r_values, probabilities) for the chosen
+    distribution function describing particle radii.
+    """
+    pass
+
+
+# ============================================================
+# ========= 5. INTENSITY FOR A SINGLE RADIUS VALUE ============
+# ============================================================
+
+def intensity_single_radius(qr2, qr4, rg, r_i, phi_tag_tag):
+    """
+    Compute the intensity contribution from a single radius r_i.
+    """
+    pass
+
+
+# ============================================================
+# ===================== 6. SMEARING ===========================
+# ============================================================
+
+def smear_intensity(intensity_map, psf_kernel):
+    """
+    Convolve the intensity with the detector PSF kernel.
+    """
+    pass
+
+
+# ============================================================
+# ==================== 7. ADD NOISE ===========================
+# ============================================================
+
+def add_noise(intensity_map, photon_noise_count):
+    """
+    Apply Gaussian or photon-count noise to a simulated intensity.
+    """
+    pass
+
+
+# ============================================================
+# ======================= MAIN WRAPPER ========================
+# ============================================================
+
+def Scatter2D(
+        rg,
+        variance,
+        phi_tag_tag=-1 / 63,
+        photon_noise_count=0,
+        pixel_amount_detector=1000,
+        distance_to_detector=150,
+        wavelength=0.15,
+        detector_size=7.0,
+        psf_kernel=None,
+        distribution_function=None
+):
+    """
+    High-level interface for simulating 2D scattering.
+    """
+    # 1. Validate
+    validate_scatter_parameters(
+        rg, variance, phi_tag_tag, photon_noise_count,
+        pixel_amount_detector, distance_to_detector,
+        wavelength, detector_size, psf_kernel
+    )
+
+    # 2. q-grid
+    qx, qy = create_q_grid(
+        pixel_amount_detector,
+        detector_size,
+        distance_to_detector,
+        wavelength
+    )
+
+    # 3. radius distribution
+    r_values, p_weights = radius_distribution_model(
+        distribution_function,
+        variance
+    )
+
+    # 4. Build intensity map
+    I = np.zeros_like(qx)
+
+    for r_i, p_i in zip(r_values, p_weights):
+        I += p_i * intensity_single_radius(qx ** 2 + qy ** 2, (qx ** 2 + qy ** 2) ** 2, rg, r_i, phi_tag_tag)
+
+    # 5. smear
+    I = smear_intensity(I, psf_kernel)
+
+    # 6. add noise
+    I = add_noise(I, photon_noise_count)
+
+    return qx, qy, I
