@@ -3,14 +3,15 @@ from find_V_and_phi_tag_tag import V_fun, phi_tag_tag_fun
 from blur_func import gaussian_blur2d
 from guinier_approximation import estimate_Rg
 
+
 # our code uses three function, initial processing, where we get the data ready for analysis and make sure we got the
 # correct format of data.
 # get m anf g constant, where we get values of an initial fit of the data.
 # and get v and phi_tag_tag, where we use the initial fit to get the necessary data.
 
 def polar_transform(
-    q_x,
-    q_y
+        q_x,
+        q_y
 ):
     """
 
@@ -22,16 +23,17 @@ def polar_transform(
         q: a numpy 2D array of the MAGNITUDE of each q value in the SAXS image
         chi: a numpy 2D array of the angle of each q value in the SAXS image
     """
-    q = np.sqrt(q_x^2+q_y^2)
-    chi =np.atan2(q_y,q_x)
-    return q,chi
+    q = np.sqrt(q_x ** 2 + q_y ** 2)
+    chi = np.atan2(q_y, q_x)
+    return q, chi
+
 
 def initial_processing(
-    I1,
-    chi,
-    *,
-    I2=None,
-    sigma=None
+        I1,
+        chi,
+        *,
+        I2=None,
+        sigma=None
 ):
     """
     Args:
@@ -92,12 +94,12 @@ def initial_processing(
 
 
 def get_m_and_g_constants(
-    I1,
-    q,
-    chi,
-    *,
-    I2=None,
-    sigma=None
+        I1,
+        q,
+        chi,
+        *,
+        I2=None,
+        sigma=None
 ):
     """
     Args:
@@ -143,11 +145,13 @@ def get_m_and_g_constants(
     # ravel takes the 2D arrays and put all rows one after the other.
     y = ln_delta_I.ravel()
     x = cos_2_chi.ravel()
-    t = (q**2).ravel()
+    t = (q ** 2).ravel()
 
     # we make sure again that the values are finite. better safe then sorry.
     valid = np.isfinite(y) & np.isfinite(x) & np.isfinite(t)
-    y = y[valid]; x = x[valid]; t = t[valid]
+    y = y[valid];
+    x = x[valid];
+    t = t[valid]
 
     # If nothing valid, fail clearly
     if y.size == 0:
@@ -158,8 +162,8 @@ def get_m_and_g_constants(
     # to create the relevant matrix
 
     # Design matrix columns: [1, t, t^2, t^3, x*t, x*t^2, x*t^3]
-    Phi_g = np.column_stack([np.ones_like(t), t, t**2, t**3])
-    Phi_m = np.column_stack([t, t**2, t**3])
+    Phi_g = np.column_stack([np.ones_like(t), t, t ** 2, t ** 3])
+    Phi_m = np.column_stack([t, t ** 2, t ** 3])
     Z = np.column_stack([Phi_g, x[:, None] * Phi_m])
 
     # calculate the least sqaure fit.
@@ -170,16 +174,15 @@ def get_m_and_g_constants(
 
 
 def get_V_and_phi_tagtag(
-    I1,
-    q_x,
-    q_y,
-    q_min,
-    q_max,
-    *,
-    I2=None,
-    sigma=None
+        I1,
+        q_x,
+        q_y,
+        q_min,
+        q_max,
+        *,
+        I2=None,
+        sigma=None
 ):
-
     """
     Args:
         I1: a numpy 2D array of intensity in a SAXS image
@@ -212,7 +215,7 @@ def get_V_and_phi_tagtag(
     """r_g_sq_mod: a numpy float, the value of Rg^2(1+V) which is derived from guinner analysis of the data."""
     flat_q = q.flatten()
     flat_I1 = I1.flatten()
-    r_g_sq_mod = estimate_Rg(flat_q, flat_I1, q_min, q_max)^2
+    r_g_sq_mod = estimate_Rg(flat_q, flat_I1, q_min, q_max) ** 2
 
     # raise rlevant errors
     if r_g_sq_mod <= 0:
@@ -233,6 +236,6 @@ def get_V_and_phi_tagtag(
     if V <= 0:
         raise ValueError("V came out negative.")
     phi_tag_tag = phi_tag_tag_fun(c_m, c_g)
-    r_g = np.sqrt(r_g_sq_mod/(1+V))
+    r_g = np.sqrt(r_g_sq_mod / (1 + V))
 
-    return [(float (r_g), float(V), float(phi_tag_tag))]
+    return [(float(r_g), float(V), float(phi_tag_tag))]

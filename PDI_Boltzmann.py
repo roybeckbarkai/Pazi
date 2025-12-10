@@ -1,17 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def second_moment(sigma):
-    return 1 + sigma**2
+    return 1 + sigma ** 2
+
 
 def sixth_moment(sigma):
-    return 1 + 15*sigma**2 + 90*sigma**4 + 90*sigma**6
+    return 1 + 15 * sigma ** 2 + 90 * sigma ** 4 + 90 * sigma ** 6
+
 
 def eight_moment(sigma):
-    return 1 + 28*sigma**2 + 420*sigma**4 + 2520*sigma**6 + 2520*sigma**8
+    return 1 + 28 * sigma ** 2 + 420 * sigma ** 4 + 2520 * sigma ** 6 + 2520 * sigma ** 8
+
 
 def PDI_func(sigma):
-    return (second_moment(sigma) * eight_moment(sigma)**2) / (sixth_moment(sigma)**3)
+    return (second_moment(sigma) * eight_moment(sigma) ** 2) / (sixth_moment(sigma) ** 3)
+
 
 # ----------------------------------------------------------
 # 1. Generate sigma and PDI values
