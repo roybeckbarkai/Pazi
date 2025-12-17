@@ -8,108 +8,60 @@ from distribution_functions import gaussian
 # ============================================================
 
 def validate_scatter_parameters(
-        rg,
-        phi_tag_tag,
-        photon_noise_count,
-        pixel_count_along_detector,
-        distance_to_detector,
-        wavelength,
-        detector_length,
-        smearing_kernel_PSF,
-        amount_of_radii_fractions,
-        radii_fraction_difference,
-        distribution_function
+    rg,
+    phi_tag_tag,
+    photon_noise_count,
+    pixel_count_along_detector,
+    distance_to_detector,
+    wavelength,
+    detector_length,
+    smearing_kernel_PSF,
+    amount_of_radii_fractions,
+    radii_fraction_difference,
+    distribution_function
 ):
     """
-    Validate and sanitize all input parameters. Return potentially updated values.
-    If a parameter is invalid, reset to default and print info.
-
-    Returns
-    -------
-    Tuple of all parameters, potentially corrected
+    Validate input parameters.
+    Raises ValueError if any parameter is invalid.
     """
 
-    # --- Default values from wrapper ---
-    default_values = {
-        "rg": 1.0,
-        "phi_tag_tag": -1 / 63,
-        "photon_noise_count": 0,
-        "pixel_count_along_detector": 1000,
-        "distance_to_detector": 150,
-        "wavelength": 0.15,
-        "detector_length": 7.0,
-        "smearing_kernel_PSF": np.array([[1.0]]),
-        "amount_of_radii_fractions": 11,
-        "radii_fraction_difference": 0.08,
-        "distribution_function": "normalised_gaussian"
-    }
-
-    # --- Begin checks ---
     if not isinstance(rg, (int, float)) or rg <= 0:
-        print(f"rg={rg} invalid, resetting to default {default_values['rg']}")
-        rg = default_values["rg"]
+        raise ValueError(f"Invalid rg: {rg}. Must be a positive number.")
 
     if not isinstance(phi_tag_tag, (int, float)):
-        print(f"phi_tag_tag={phi_tag_tag} invalid, resetting to default {default_values['phi_tag_tag']}")
-        phi_tag_tag = default_values["phi_tag_tag"]
+        raise ValueError(f"Invalid phi_tag_tag: {phi_tag_tag}. Must be numeric.")
 
     if not isinstance(photon_noise_count, (int, float)) or photon_noise_count < 0:
-        print(
-            f"photon_noise_count={photon_noise_count} invalid, resetting to default {default_values['photon_noise_count']}")
-        photon_noise_count = default_values["photon_noise_count"]
+        raise ValueError(f"Invalid photon_noise_count: {photon_noise_count}. Cannot be negative.")
 
     if not isinstance(pixel_count_along_detector, int) or pixel_count_along_detector < 1:
-        print(
-            f"pixel_count_along_detector={pixel_count_along_detector} invalid, resetting to default {default_values['pixel_count_along_detector']}")
-        pixel_count_along_detector = default_values["pixel_count_along_detector"]
+        raise ValueError(f"Invalid pixel_count_along_detector: {pixel_count_along_detector}. Must be int >= 1.")
 
     if not isinstance(distance_to_detector, (int, float)) or distance_to_detector <= 0:
-        print(
-            f"distance_to_detector={distance_to_detector} invalid, resetting to default {default_values['distance_to_detector']}")
-        distance_to_detector = default_values["distance_to_detector"]
+        raise ValueError(f"Invalid distance_to_detector: {distance_to_detector}.")
 
     if not isinstance(wavelength, (int, float)) or wavelength <= 0:
-        print(f"wavelength={wavelength} invalid, resetting to default {default_values['wavelength']}")
-        wavelength = default_values["wavelength"]
+        raise ValueError(f"Invalid wavelength: {wavelength}.")
 
     if not isinstance(detector_length, (int, float)) or detector_length <= 0:
-        print(f"detector_length={detector_length} invalid, resetting to default {default_values['detector_length']}")
-        detector_length = default_values["detector_length"]
+        raise ValueError(f"Invalid detector_length: {detector_length}.")
 
     if smearing_kernel_PSF is None or not isinstance(smearing_kernel_PSF, np.ndarray) or smearing_kernel_PSF.ndim != 2:
-        print(f"smearing_kernel_PSF invalid, resetting to default {default_values['smearing_kernel_PSF']}")
-        smearing_kernel_PSF = default_values["smearing_kernel_PSF"]
+        raise ValueError("smearing_kernel_PSF must be a 2D numpy array.")
 
-    # Check number of discrete radii points: should be odd and >=3
-    if not isinstance(amount_of_radii_fractions,
-                      int) or amount_of_radii_fractions < 3 or amount_of_radii_fractions % 2 == 0:
-        print(
-            f"amount_of_radii_fractions={amount_of_radii_fractions} invalid, resetting to default {default_values['amount_of_radii_fractions']}")
-        amount_of_radii_fractions = default_values["amount_of_radii_fractions"]
+    if not isinstance(amount_of_radii_fractions, int) or amount_of_radii_fractions < 3 or amount_of_radii_fractions % 2 == 0:
+        raise ValueError(f"amount_of_radii_fractions ({amount_of_radii_fractions}) must be an odd integer >= 3.")
 
     if not isinstance(radii_fraction_difference, (int, float)) or radii_fraction_difference <= 0:
-        print(
-            f"radii_fraction_difference={radii_fraction_difference} invalid, resetting to default {default_values['radii_fraction_difference']}")
-        radii_fraction_difference = default_values["radii_fraction_difference"]
+        raise ValueError(f"Invalid radii_fraction_difference: {radii_fraction_difference}.")
 
-    if distribution_function is None or (
-            not callable(distribution_function) and distribution_function != "normalised_gaussian"):
-        print(f"distribution_function={distribution_function} invalid, resetting to default 'normalised_gaussian'")
-        distribution_function = default_values["distribution_function"]
+    if distribution_function is None or (not callable(distribution_function) and distribution_function != "normalised_gaussian"):
+        raise ValueError(f"Invalid distribution_function: {distribution_function}.")
 
-    # --- Return validated / corrected parameters ---
     return (
-        rg,
-        phi_tag_tag,
-        photon_noise_count,
-        pixel_count_along_detector,
-        distance_to_detector,
-        wavelength,
-        detector_length,
-        smearing_kernel_PSF,
-        amount_of_radii_fractions,
-        radii_fraction_difference,
-        distribution_function
+        rg, phi_tag_tag, photon_noise_count, pixel_count_along_detector,
+        distance_to_detector, wavelength, detector_length, smearing_kernel_PSF,
+        amount_of_radii_fractions, radii_fraction_difference, distribution_function
     )
 
 

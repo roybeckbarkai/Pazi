@@ -1,12 +1,14 @@
-from data_creation import Scatter2D, normalised_gaussian
 import matplotlib.pyplot as plt
-from data_analysis import get_V_and_phi_tagtag
+import numpy as np
+
 from distribution_functions import Boltzmann_dis
+from data_creation import Scatter2D
 
 def example_boltz(x):
     y = Boltzmann_dis(x, sigma=0.1, mean=1)
     return y
 
+smearing_kernel_PSF_used = np.diag([1, 2]
 # let's try to build a single intenisty map with the defult values
 qx, qy, I = Scatter2D(rg=1,
                       phi_tag_tag=-1 / 63,
@@ -15,7 +17,7 @@ qx, qy, I = Scatter2D(rg=1,
                       distance_to_detector=150,
                       wavelength=0.15,
                       detector_length=7.0,
-                      smearing_kernel_PSF=[[1, 0], [0, 1]],
+                      smearing_kernel_PSF=smearing_kernel_PSF_used,
                       amount_of_radii_fractions=11,
                       radii_fraction_difference=0.08,
                       distribution_function=example_boltz)
