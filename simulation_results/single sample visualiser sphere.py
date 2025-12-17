@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from distribution_functions import Boltzmann_dis
-from data_creation import Scatter2D
+from data_creation_spherical import Scatter2D_spherical
 
 def example_boltz(x):
     y = Boltzmann_dis(x, sigma=0.1, mean=1)
@@ -28,11 +28,10 @@ def generate_elliptical_kernel(size=51, sigma_x=10.0, sigma_y=2.0):
 
 
 # Example: High stretch along the qx axis
-smearing_kernel_PSF_used = generate_elliptical_kernel(size=51, sigma_x=1.0, sigma_y=10.0)
+smearing_kernel_PSF_used = generate_elliptical_kernel(size=51, sigma_x=1.0, sigma_y=2.0)
 
 # let's try to build a single intenisty map with the defult values
-qx, qy, I = Scatter2D(rg=1,
-                      phi_tag_tag=-1 / 63,
+qx, qy, I = Scatter2D_spherical(rg=5,
                       peak_photon_density=10**11,
                       pixel_count_along_detector=1000,
                       distance_to_detector=150,
@@ -49,4 +48,3 @@ plt.xlabel("qx")
 plt.ylabel("qy")
 plt.colorbar(label="I")
 plt.show()
-

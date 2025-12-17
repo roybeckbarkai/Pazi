@@ -300,6 +300,19 @@ def Scatter2D(
     4. Build intensity map from physics model
     5. Apply smearing
     6. Add noise
+
+        rg - a float - the average radius of gyration in the sample. In units of nm
+        phi_tag_tag - a float - the factor for extended Guinier analysis
+        peak_photon_density - a float - the photon density at the peak of the ray - In units of photon/nm**2
+        pixel_count_along_detector - a float - the amount of pixels along a vertex of a square detector
+        distance_to_detector - a float - distance from the sample to the detector - In units of cm
+        wavelength- a float - wavelength of the scattering X-ray - In units of nm
+        detector_length - a float - the length of the detector - In units of cm
+        smearing_kernel_PSF - a 2D array - kernel used for stretching the intensity map
+        amount_of_radii_fractions - a float - number of radii we sample from our pdf
+        radii_fraction_difference - a float - relative section of radii we check from Rg
+        distribution_function - a function - the distribution function from which we sample radii wights
+
     """
 
     # 1. Validate and sanitize all inputs
