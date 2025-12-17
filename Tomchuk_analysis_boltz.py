@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.special import erf
+from matplotlib import pyplot as plt
 
-from data_creation import Scatter2D
+
+from data_creation_spherical import Scatter2D_spherical
 from distribution_functions import Boltzmann_dis
-
+from single_sample_visualiser_sphere import generate_elliptical_kernel
 # first - define extended guiner
 # --- Step 1: Define the Guinier Fit Function ---
 
@@ -175,18 +177,89 @@ def example_boltz(x):
     y = Boltzmann_dis(x, sigma=0.1, mean=1)
     return y
 
-# let's try to build a single intenisty map with the defult values
-qx, qy, I = Scatter2D(rg=1,
-                      phi_tag_tag=-1 / 63,
-                      photon_noise_count=0,
-                      pixel_count_along_detector=1000,
-                      distance_to_detector=150,
-                      wavelength=0.15,
-                      detector_length=7.0,
-                      smearing_kernel_PSF=[[1, 0], [0, 1]],
-                      amount_of_radii_fractions=11,
-                      radii_fraction_difference=0.08,
-                      distribution_function=example_boltz)
 
-p = get_p(I, qx, qy)
-print(p)
+smearing_kernel_PSF_used = generate_elliptical_kernel(size=51, sigma_x=1.0, sigma_y=1.0)
+# let's try to build a single intenisty map with the defult values
+def visualize_analysis_pipeline(qx, qy, I, q_squared_avg, I_avg, fit_results, p_value, PDI_calculated):
+    """
+    Diagnostic dashboard to see exactly where the analysis is failing.
+    """
+    fig = plt.figure(figsize=(15, 10))
+
+    # 1. Show the 2D Intensity Map
+    ax1 = fig.add_subplot(2, 3, 1)
+    im = ax1.pcolormesh(qx, qy, np.log10(I + 1e-12), cmap='viridis', shading='auto')
+    ax1.set_title("1. 2D Intensity (Log Scale)")
+    plt.colorbar(im, ax=ax1, label="log10(I)")
+
+    # 2 & 3. Show Averaged I vs q^2 and the Fit
+    ax2 = fig.add_subplot(2, 3, 2)
+    ax2.scatter(q_squared_avg, I_avg, s=10, color='gray', alpha=0.5, label="Data")
+
+    if fit_results:
+        G, Rg, B, perr = fit_results
+        I_fit = guinier_fit_ext(q_squared_avg, G, Rg, B)
+        ax2.plot(q_squared_avg, I_fit, 'r-', linewidth=2, label="Guinier-Porod Fit")
+
+        # 4. Show Fitting Parameters text
+        param_text = f"G: {G:.2e}\nRg: {Rg:.2f}\nB: {B:.2e}\nRg_err: {perr[1]:.2e}"
+        ax2.text(0.05, 0.05, param_text, transform=ax2.transAxes,
+                 bbox=dict(facecolor='white', alpha=0.8))
+
+    ax2.set_yscale('log')
+    ax2.set_xlabel("$q^2$")
+    ax2.set_ylabel("Intensity")
+    ax2.set_title("2 & 3. 1D Avg & Fit")
+    ax2.legend()
+
+    # 5. Graph p(PDI) and mark the spot
+    ax3 = fig.add_subplot(2, 3, 3)
+    pdi_range = np.linspace(0, 1.5, 100)  # Assuming PDI is usually in this range
+    p_curve = p_calc(pdi_range)
+    ax3.plot(pdi_range, p_curve, 'b-', label="p(PDI) Model")
+
+    # Check if PDI is within a plottable range
+    if 0 <= PDI_calculated <= 2.0:
+        ax3.scatter([PDI_calculated], [p_value], color='red', s=100, zorder=5)
+        ax3.annotate(f"Current Run\np={p_value:.3f}", (PDI_calculated, p_value))
+
+    ax3.set_ylim(-1, 2)  # Adjust based on your polynomial expected output
+    ax3.set_xlabel("PDI")
+    ax3.set_ylabel("p factor")
+    ax3.set_title("5. PDI to p mapping")
+    ax3.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+# --- Modified execution block ---
+
+# Generate Data
+qx, qy, I = Scatter2D_spherical(
+    rg=5,
+    peak_photon_density=10 ** 11,
+    pixel_count_along_detector=1000,
+    distance_to_detector=150,
+    wavelength=0.15,
+    detector_length=7.0,
+    smearing_kernel_PSF=smearing_kernel_PSF_used,
+    amount_of_radii_fractions=11,
+    radii_fraction_difference=0.08,
+    distribution_function=example_boltz
+)
+
+# Perform Analysis manually to get intermediate steps
+fit_results, (q_sq_avg, I_avg) = perform_guinier_analysis_ext(I, qx, qy)
+
+if fit_results:
+    G_f, Rg_f, B_f, errors = fit_results
+    PDI_val = PDI_calc(G_f, Rg_f, B_f)
+    p_final = p_calc(PDI_val)
+
+    print(f"Analysis Results:\n- G: {G_f}\n- Rg: {Rg_f}\n- B: {B_f}\n- PDI: {PDI_val}\n- p: {p_final}")
+
+    # Visualize everything
+    visualize_analysis_pipeline(qx, qy, I, q_sq_avg, I_avg, fit_results, p_final, PDI_val)
+else:
+    print("Fit failed entirely.")

@@ -28,7 +28,7 @@ def generate_elliptical_kernel(size=51, sigma_x=10.0, sigma_y=2.0):
 
 
 # Example: High stretch along the qx axis
-smearing_kernel_PSF_used = generate_elliptical_kernel(size=51, sigma_x=1.0, sigma_y=10.0)
+smearing_kernel_PSF_used = generate_elliptical_kernel(size=2, sigma_x=1.0, sigma_y=50.0)
 
 # let's try to build a single intenisty map with the defult values
 qx, qy, I = Scatter2D(rg=1,
@@ -45,8 +45,8 @@ qx, qy, I = Scatter2D(rg=1,
 
 plt.figure()
 plt.pcolormesh(qx, qy, I, shading='auto')
-plt.xlabel("qx")
-plt.ylabel("qy")
+plt.xlabel("qx[1/nm]")
+plt.ylabel("qy[1/nm]")
 plt.colorbar(label="I")
 plt.show()
 
