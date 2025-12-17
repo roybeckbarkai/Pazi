@@ -308,7 +308,7 @@ def smear_intensity(intensity_map, smearing_kernel_PSF):
 # ==================== 7. ADD NOISE ==========================
 # ============================================================
 
-def add_noise(intensity_map, photon_noise_count):
+def add_noise(intensity_map, peak_photon_density):
     """
     Apply Gaussian photon-count noise.
 
@@ -316,10 +316,10 @@ def add_noise(intensity_map, photon_noise_count):
     ----------
     intensity_map : np.ndarray
         NxN intensity grid
-    photon_noise_count : float
-        Standard deviation of added Gaussian noise
+    peak_photon_density : float
+        peak photon density at the center of the bean, in units of photon/nm**2
     """
-    return intensity_map + photon_noise_count * np.random.randn(*intensity_map.shape)
+    return intensity_map + np.sqrt(intensity_map / peak_photon_density) * np.random.randn(*intensity_map.shape)
 
 
 # ============================================================
@@ -329,7 +329,7 @@ def add_noise(intensity_map, photon_noise_count):
 def Scatter2D(
         rg,
         phi_tag_tag=-1 / 63,
-        photon_noise_count=0,
+        peak_photon_density=0,
         pixel_count_along_detector=1000,
         distance_to_detector=150,
         wavelength=0.15,
@@ -354,7 +354,7 @@ def Scatter2D(
     rg, phi_tag_tag, photon_noise_count, pixel_count_along_detector, \
         distance_to_detector, wavelength, detector_length, smearing_kernel_PSF, \
         amount_of_radii_fractions, radii_fraction_difference, distribution_function = validate_scatter_parameters(
-            rg, phi_tag_tag, photon_noise_count,
+            rg, phi_tag_tag, peak_photon_density,
             pixel_count_along_detector, distance_to_detector,
             wavelength, detector_length, smearing_kernel_PSF,
             amount_of_radii_fractions, radii_fraction_difference,
@@ -375,6 +375,6 @@ def Scatter2D(
     F = smear_intensity(F, smearing_kernel_PSF)
 
     # 6. Add noise
-    F = add_noise(F, photon_noise_count)
+    F = add_noise(F, peak_photon_density)
 
     return qx, qy, F
