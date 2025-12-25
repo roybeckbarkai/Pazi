@@ -15,7 +15,7 @@ def validate_scatter_parameters(
     distance_to_detector,
     wavelength,
     detector_length,
-    smearing_kernel_PSF,
+    smear_dims,
     amount_of_radii_fractions,
     radii_fraction_difference,
     distribution_function
@@ -46,8 +46,10 @@ def validate_scatter_parameters(
     if not isinstance(detector_length, (int, float)) or detector_length <= 0:
         raise ValueError(f"Invalid detector_length: {detector_length}.")
 
-    if smearing_kernel_PSF is None or not isinstance(smearing_kernel_PSF, np.ndarray) or smearing_kernel_PSF.ndim != 2:
-        raise ValueError("smearing_kernel_PSF must be a 2D numpy array.")
+    if (not isinstance(smear_dims, (tuple, list)) or
+            len(smear_dims) != 2 or
+            not all(isinstance(x, int) and x > 0 for x in smear_dims)):
+        raise ValueError(f"smear_dims must be a tuple of two positive integers (m, n). Got: {smear_dims}")
 
     if not isinstance(amount_of_radii_fractions, int) or amount_of_radii_fractions < 3 or amount_of_radii_fractions % 2 == 0:
         raise ValueError(f"amount_of_radii_fractions ({amount_of_radii_fractions}) must be an odd integer >= 3.")
@@ -60,7 +62,7 @@ def validate_scatter_parameters(
 
     return (
         rg, phi_tag_tag, photon_noise_count, pixel_count_along_detector,
-        distance_to_detector, wavelength, detector_length, smearing_kernel_PSF,
+        distance_to_detector, wavelength, detector_length, smear_dims,
         amount_of_radii_fractions, radii_fraction_difference, distribution_function
     )
 
@@ -246,14 +248,49 @@ def form_factor_intensity(qx, qy, radii, p_weights, rg, phi_tag_tag):
 # ===================== 6. SMEARING ==========================
 # ============================================================
 
-def smear_intensity(intensity_map, smearing_kernel_PSF):
-    """
-    Convolve the intensity with the detector PSF kernel.
+def make_bartlett_kernel(m, n):
+    """Creates a normalized 2D Bartlett (triangular) kernel."""
+    # np.bartlett(m+2)[1:-1] ensures the edges are non-zero
+    wy = np.bartlett(m + 2)[1:-1]
+    wx = np.bartlett(n + 2)[1:-1]
+    kernel = np.outer(wy, wx)
+    return kernel / np.sum(kernel)
 
-    smearing_kernel_PSF : 2D np.ndarray
-        Kernel for detector smearing (e.g., Gaussian blur)
+
+def make_kernel_odd_centered(kernel_in):
+    """Expands even-sized kernel to odd while keeping center (MATLAB logic)."""
+    kernel_out = np.array(kernel_in, dtype=float)
+
+    # Rows expansion
+    r, c = kernel_out.shape
+    if r % 2 == 0:
+        tmp = np.zeros((r + 1, c))
+        for i in range(r):
+            tmp[i, :] += 0.5 * kernel_out[i, :]
+            tmp[i + 1, :] += 0.5 * kernel_out[i, :]
+        kernel_out = tmp
+
+    # Columns expansion
+    r, c = kernel_out.shape
+    if c % 2 == 0:
+        tmp = np.zeros((r, c + 1))
+        for j in range(c):
+            tmp[:, j] += 0.5 * kernel_out[:, j]
+            tmp[:, j + 1] += 0.5 * kernel_out[:, j]
+        kernel_out = tmp
+    return kernel_out
+
+
+def smear_intensity(intensity_map, smear_dims):
     """
-    return convolve2d(intensity_map, smearing_kernel_PSF, mode="same")
+    Creates an odd-centered kernel from (m, n) and smears the intensity map.
+    """
+    m, n = smear_dims
+    raw_kernel = make_bartlett_kernel(m, n)
+    centered_kernel = make_kernel_odd_centered(raw_kernel)
+
+    # mode="same" keeps output size identical to input size
+    return convolve2d(intensity_map, centered_kernel, mode="same")
 
 
 # ============================================================
@@ -286,7 +323,7 @@ def Scatter2D(
         distance_to_detector=150,
         wavelength=0.15,
         detector_length=7.0,
-        smearing_kernel_PSF=None,
+        smear_dims=(1,1),
         amount_of_radii_fractions=11,
         radii_fraction_difference=0.08,
         distribution_function=normalised_gaussian
@@ -317,11 +354,11 @@ def Scatter2D(
 
     # 1. Validate and sanitize all inputs
     rg, phi_tag_tag, photon_noise_count, pixel_count_along_detector, \
-        distance_to_detector, wavelength, detector_length, smearing_kernel_PSF, \
+        distance_to_detector, wavelength, detector_length, smear_dims, \
         amount_of_radii_fractions, radii_fraction_difference, distribution_function = validate_scatter_parameters(
             rg, phi_tag_tag, peak_photon_density,
             pixel_count_along_detector, distance_to_detector,
-            wavelength, detector_length, smearing_kernel_PSF,
+            wavelength, detector_length, smear_dims,
             amount_of_radii_fractions, radii_fraction_difference,
             distribution_function
             )
@@ -337,9 +374,9 @@ def Scatter2D(
     F = form_factor_intensity(qx, qy, radii, p_weights, rg, phi_tag_tag)
 
     # 5. Apply smearing
-    F = smear_intensity(F, smearing_kernel_PSF)
+    F_smeared = smear_intensity(F, smear_dims)
 
     # 6. Add noise
-    F = add_noise(F, peak_photon_density)
+    F = add_noise(F_smeared, peak_photon_density)
 
     return qx, qy, F

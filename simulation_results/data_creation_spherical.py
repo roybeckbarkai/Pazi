@@ -38,7 +38,7 @@ def form_factor_intensity_spherical(qx, qy, radii, p_weights, rg):
 
     return total_intensity
 
-# replcate the process for the sphere
+# repelcate the process for the sphere
 def Scatter2D_spherical(
         rg,
         peak_photon_density=0,
@@ -46,7 +46,7 @@ def Scatter2D_spherical(
         distance_to_detector=150,
         wavelength=0.15,
         detector_length=7.0,
-        smearing_kernel_PSF=None,
+        smear_dims=(1,1),
         amount_of_radii_fractions=11,
         radii_fraction_difference=0.08,
         distribution_function=normalised_gaussian
@@ -78,11 +78,11 @@ def Scatter2D_spherical(
     # 1. Validate and sanitize all inputs
     # Note: we pass 0 for phi_tag_tag since spheres don't use it
     rg, _, photon_noise_count, pixel_count_along_detector, \
-        distance_to_detector, wavelength, detector_length, smearing_kernel_PSF, \
+        distance_to_detector, wavelength, detector_length, smear_dims, \
         amount_of_radii_fractions, radii_fraction_difference, distribution_function = data.validate_scatter_parameters(
         rg, 0, peak_photon_density,
         pixel_count_along_detector, distance_to_detector,
-        wavelength, detector_length, smearing_kernel_PSF,
+        wavelength, detector_length, smear_dims,
         amount_of_radii_fractions, radii_fraction_difference,
         distribution_function
     )
@@ -98,9 +98,9 @@ def Scatter2D_spherical(
     F = form_factor_intensity_spherical(qx, qy, radii, p_weights, rg)
 
     # 5. Apply smearing
-    F = data.smear_intensity(F, smearing_kernel_PSF)
+    F_smeared = data.smear_intensity(F, smear_dims)
 
     # 6. Add noise
-    F = data.add_noise(F, peak_photon_density)
+    F_full = data.add_noise(F_smeared, peak_photon_density)
 
-    return qx, qy, F
+    return qx, qy, F_full, F_smeared, F
