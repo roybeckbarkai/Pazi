@@ -41,18 +41,34 @@ p_val = np.poly1d(p_coeffs)(PDI)
 
 print(f"Analysis Results:\n- Rg: {Rg_f:.4f}\n- PDI: {PDI:.4f}\n- p: {p_val:.4f}")
 
-# 6. Simplified Plotting
-plt.figure(figsize=(8, 6))
-plt.scatter(q_sq_data * Rg_f**2, np.log(I_data), s=0.1, color='gray', alpha=0.05, label="Raw Data")
+# 5. Physics Constants for Scaling
+# These must match your Scatter2D_spherical input
+rg_input = 2.0
+sigma = 0.1
+scaling_factor = rg_input * (1 + sigma**2)
 
-# Create a smooth line for the fit visualization
-# q_plot = np.linspace(q_sq_data.min(), q_sq_data.max(), 500)
-# plt.plot(q_plot, guinier_fit_ext(q_plot, *p_opt), 'r-', lw=2, label="Guinier-Porod Fit")
+# 6. Scaled Plotting
+plt.figure(figsize=(10, 6))
 
+# Calculate the new x-axis: q * Rg * (1 + sigma^2)
+# We take sqrt of q_sq_data to get q
+q_linear = np.sqrt(q_sq_data)
+x_scaled = q_linear * scaling_factor
 
-plt.xlabel("$q^2$")
-plt.ylabel("Intensity")
-plt.title(f"Fit Results: $R_g$={Rg_f:.2f}, $p$={p_val:.3f}")
+# Scatter the raw data
+plt.scatter(x_scaled, np.log(I_data), s=0.1, color='gray', alpha=0.05, label="Raw Data (Scaled)")
+
+# Optional: Add the fit line on the same scaled axis
+# We create a q_range for the line
+q_plot_linear = np.linspace(q_linear.min(), q_linear.max(), 500)
+I_fit = guinier_fit_ext(q_plot_linear**2, *p_opt)
+
+plt.plot(q_plot_linear * scaling_factor, np.log(I_fit), 'r-', lw=2, label="Guinier-Porod Fit")
+
+# Labeling
+plt.xlabel(r"$q \cdot R_g(1+\sigma^2)$ (Scaled Dimensionless Axis)")
+plt.ylabel("$\ln(Intensity)$")
+plt.title(f"Scaled Fit: $R_g$={Rg_f:.2f}, $p$={p_val:.3f}")
 plt.legend()
 plt.grid(True, which="both", ls="-", alpha=0.2)
 plt.show()
