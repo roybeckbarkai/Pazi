@@ -1,4 +1,5 @@
 import io
+import importlib
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
@@ -8,14 +9,11 @@ import plotly.graph_objects as go
 import streamlit as st
 from scipy.stats import gamma, laplace, linregress, lognorm, norm, triang, uniform
 
-try:
+HAS_SASMODELS = importlib.util.find_spec("sasmodels") is not None
+if HAS_SASMODELS:
     from sasmodels.core import load_model
     from sasmodels.data import empty_data1D
     from sasmodels.direct_model import DirectModel
-
-    HAS_SASMODELS = True
-except Exception:
-    HAS_SASMODELS = False
 
 
 @dataclass
